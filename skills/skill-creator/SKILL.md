@@ -61,12 +61,44 @@ Check available MCPs - if useful for research (searching docs, finding similar s
 
 ### Write the SKILL.md
 
-Based on the user interview, fill in these components:
+Based on the user interview, fill in the YAML frontmatter and markdown body. The frontmatter follows the strawpot schema:
 
-- **name**: Skill identifier
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Required tools, dependencies (optional, rarely needed)
-- **the rest of the skill :)**
+```yaml
+---
+name: my-skill                            # Required: package slug (must match directory name)
+description: "What it does and when..."   # Required: one-line summary + trigger contexts
+metadata:
+  strawpot:
+    dependencies:                         # Optional: flat list of skill dependency slugs
+      - other-skill
+    tools:                                # Optional: system tool requirements
+      gh:
+        description: GitHub CLI
+        install:
+          macos: brew install gh
+          linux: apt install gh
+          windows: winget install GitHub.cli
+    env:                                  # Optional: required environment variables
+      API_KEY:
+        required: true
+        description: API key for the service
+---
+
+# Skill Title
+
+Markdown body with instructions...
+```
+
+**Required fields:**
+
+- **name**: Package slug — must be unique and match the directory name. Validated at publish time.
+- **description**: The primary triggering mechanism — include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills — to not use them when they'd be useful. To combat this, make descriptions a bit "pushy". For instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
+
+**Optional fields:**
+
+- **metadata.strawpot.dependencies**: Flat list of skill slugs this skill depends on. Dependencies are resolved recursively with cycle detection.
+- **metadata.strawpot.tools**: System tools the skill needs. Tool names should match the CLI binary (used for `PATH` detection). During install, missing tools are auto-installed using the OS-specific command. Supported OS keys: `macos`, `linux`, `windows`.
+- **metadata.strawpot.env**: Environment variables. At session start, the CLI checks if each required variable is set and prompts the user for missing ones. Resolution order: `os.environ` > saved config in `strawpot.toml` > interactive prompt.
 
 ### Skill Writing Guide
 
@@ -74,14 +106,14 @@ Based on the user interview, fill in these components:
 
 ```
 skill-name/
-├── SKILL.md (required)
-│   ├── YAML frontmatter (name, description required)
-│   └── Markdown instructions
-└── Bundled Resources (optional)
+├── SKILL.md (required — YAML frontmatter + markdown body)
+└── Supporting files (optional)
     ├── scripts/    - Executable code for deterministic/repetitive tasks
     ├── references/ - Docs loaded into context as needed
     └── assets/     - Files used in output (templates, icons, fonts)
 ```
+
+When StrawPot spawns an agent with a role, the role's skill dependencies are staged into the agent's workspace under `skills/<skill-name>/SKILL.md`. The skill markdown body is included in the agent's system prompt.
 
 #### Progressive Disclosure
 
@@ -405,15 +437,32 @@ Take `best_description` from the JSON output and update the skill's SKILL.md fro
 
 ---
 
-### Package and Present (only if `present_files` tool is available)
+### Publish to StrawHub (optional)
 
-Check whether you have access to the `present_files` tool. If you don't, skip this step. If you do, package the skill and present the .skill file to the user:
+After the skill is finalized, the user can publish it to the StrawHub registry:
 
 ```bash
-python -m scripts.package_skill <path/to/skill-folder>
+# Authenticate (first time only)
+strawhub login
+
+# Publish
+strawhub publish skill ./my-skill
+
+# With version and changelog
+strawhub publish skill ./my-skill --version 1.0.0 --changelog "Initial release"
+
+# With tags
+strawhub publish skill ./my-skill --tag python --tag testing
 ```
 
-After packaging, direct the user to the resulting `.skill` file path so they can install it.
+**Publishing rules:**
+- The `name` field in frontmatter must match the package slug
+- Versions follow semver (`major.minor.patch`) and must be strictly greater than the latest published
+- Dependencies declared in frontmatter are validated — each slug must exist in the registry
+- First publisher of a slug owns it; only the owner can publish new versions
+- File constraints apply (see StrawHub docs for current limits)
+
+Alternatively, the user can publish via the StrawHub web UI at strawhub.dev/upload (drag and drop or GitHub import).
 
 ---
 
