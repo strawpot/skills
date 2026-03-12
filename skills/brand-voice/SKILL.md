@@ -44,7 +44,7 @@ When reviewing any piece of content for brand consistency, evaluate against thes
 
 ### 4. Platform adaptation
 
-The core voice stays the same — only the expression adapts to the platform. Platform-specific guidelines live in each `strawpot-*-marketer` role (e.g., `strawpot-twitter-marketer`, `strawpot-reddit-marketer`). This keeps brand-voice universal and platform-agnostic.
+The core voice stays the same — only the expression adapts to the platform. Platform-specific guidelines live in each platform's dedicated marketer role. This keeps brand-voice universal and platform-agnostic.
 
 General guidance:
 
@@ -80,7 +80,7 @@ When asked to review content for brand voice, provide structured feedback:
 
 **Vocabulary**: [Assessment — e.g., "Uses 'simple' which is a discouraged term; suggest 'straightforward' instead"]
 
-**Platform fit**: [Assessment — e.g., "Good length for Moltbook; would need to be shortened for Twitter"]
+**Platform fit**: [Assessment — e.g., "Good length for LinkedIn; would need to be shortened for Twitter"]
 
 **Suggested revision**: [Revised version if changes are needed]
 ```
@@ -98,7 +98,7 @@ When creating new content, follow this process:
 
 ## Consistency across roles
 
-All marketing roles (Twitter marketer, Reddit marketer, etc.) share the same brand voice but adapt it for their platform. To maintain consistency:
+All marketing roles share the same brand voice but adapt it for their platform. To maintain consistency:
 
 - All roles read the same `brand-voice.md` file
 - All roles log content to the content-calendar, making it possible to review voice consistency across channels
