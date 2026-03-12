@@ -73,6 +73,9 @@ When asked to review content for brand voice, provide structured feedback:
 ## Brand Voice Review
 
 **Overall alignment**: [Strong / Moderate / Weak]
+- **Strong** — Ready to publish as-is
+- **Moderate** — Needs minor adjustments
+- **Weak** — Needs a full rewrite
 
 **Tone**: [Assessment — e.g., "Too formal for Twitter; needs to be more conversational"]
 
@@ -84,6 +87,29 @@ When asked to review content for brand voice, provide structured feedback:
 
 **Suggested revision**: [Revised version if changes are needed]
 ```
+
+## Voice intensity
+
+Calibrate energy level by content type:
+
+| Content type | Energy level | Example |
+|---|---|---|
+| Announcement | High — excitement, momentum | "We just shipped X and it changes everything" |
+| Educational | Measured — clarity, authority | "Here's how X works under the hood" |
+| Engagement | Warm — conversational, inviting | "What's the hardest part of your workflow?" |
+| Response / Reply | Grounded — helpful, direct | "Great question — here's how to do that" |
+
+## Hashtag & emoji policy
+
+Refer to `brand-voice.md` for any emoji and hashtag rules specific to the brand. If none are defined, default to restrained usage — emojis should add meaning, not decoration, and hashtags should be relevant, not stuffed.
+
+## Audience adaptation
+
+The same brand may speak to different audiences (e.g., developers vs. executives vs. end users). When the target audience for a piece of content differs from the default:
+
+- Keep the **same personality and vocabulary**
+- Adjust **depth and technicality** — more detail for practitioners, more outcomes for decision-makers
+- Adjust **formality** — slightly more polished for executive audiences
 
 ## Creating on-brand content
 
@@ -101,7 +127,7 @@ When creating new content, follow this process:
 All marketing roles share the same brand voice but adapt it for their platform. To maintain consistency:
 
 - All roles read the same `brand-voice.md` file
-- All roles log content to the content-calendar, making it possible to review voice consistency across channels
+- If a content calendar is available, log content there for cross-channel consistency review
 - When adapting content from one platform to another, preserve the core message and tone while adjusting format and length
 - Periodically review recent posts across all platforms to ensure voice drift has not occurred
 
