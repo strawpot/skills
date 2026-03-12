@@ -16,6 +16,8 @@ Scheduled tasks are cron-based jobs that automatically launch StrawPot
 sessions. They are managed through the GUI API.
 
 ## API Base
+
+```
 http://127.0.0.1:8741/api
 ```
 
@@ -35,6 +37,8 @@ curl -s http://127.0.0.1:8741/api/schedules | python3 -m json.tool
 
 ## Create a Schedule
 
+Schedules are created disabled. Call the enable endpoint after creation.
+
 ```bash
 curl -s -X POST http://127.0.0.1:8741/api/schedules \
   -H "Content-Type: application/json" \
@@ -43,8 +47,7 @@ curl -s -X POST http://127.0.0.1:8741/api/schedules \
     "project_id": 1,
     "task": "Review open GitHub issues and PRs, triage by priority",
     "cron_expr": "0 9 * * 1-5",
-    "role": "github-triage",
-    "enabled": true
+    "role": "github-triage"
   }'
 ```
 
@@ -106,5 +109,4 @@ Common patterns:
 | `cron_expr` | string | yes | Cron expression (validated) |
 | `role` | string | no | Role override (uses project default if omitted) |
 | `system_prompt` | string | no | Custom system prompt |
-| `enabled` | boolean | no | Default true |
-```
+| `skip_if_running` | boolean | no | Skip if a session from this schedule is already running (default: true) |
