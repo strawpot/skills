@@ -7,7 +7,7 @@ description: "StrawPot company vision, mission, and values. Reference this skill
 
 ## Mission
 
-Make every software engineer an engineering team.
+Make every software engineer an AI company.
 
 StrawPot turns a single developer's laptop into an autonomous software
 company — one where AI agents handle implementation, review, testing,
