@@ -1,8 +1,6 @@
 ---
 name: strawpot-sessions
 description: Inspect StrawPot session traces, logs, and artifacts
-metadata:
-  strawpot:
 ---
 
 # StrawPot Session Inspection
@@ -10,8 +8,8 @@ metadata:
 ## Session Storage
 
 Sessions are stored at `<project>/.strawpot/sessions/<run_id>/`.
-Bot Imu sessions are stored at `~/.strawpot/.strawpot/sessions/<run_id>/`
-(Bot Imu uses `~/.strawpot` as its working directory).
+Bot Imu sessions are stored at `~/.strawpot/sessions/<run_id>/`
+(Bot Imu uses `~` as its working directory).
 
 ## Find Sessions
 
