@@ -1,8 +1,6 @@
 ---
 name: strawpot-config
 description: StrawPot configuration management
-metadata:
-  strawpot:
 ---
 
 # StrawPot Configuration
