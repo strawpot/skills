@@ -46,7 +46,7 @@ It's OK to briefly explain terms if you're in doubt, and feel free to clarify te
 
 Not everything needs to be a skill. Before diving in, help the user check:
 
-- **Project-specific behavior?** A project config entry (e.g., `CLAUDE.md`, `strawpot.toml`) is simpler and doesn't need packaging.
+- **Project-specific behavior?** A project config entry (e.g., `strawpot.toml`, `CLAUDE.md`) is simpler and doesn't need packaging.
 - **One-off task?** Just do it in conversation — no skill needed.
 - **A deterministic script?** A standalone script might be better than wrapping it in skill instructions.
 
@@ -56,11 +56,11 @@ Skills shine when the behavior is **reusable across projects or sessions**, invo
 
 Before creating or improving a skill, consult the official StrawPot documentation to ensure compliance with the latest spec. Fetch the relevant pages using WebFetch during the research phase:
 
-- **Skills concept**: `https://docs.strawpot.com/strawhub/concepts/skills` — what a skill is, how agents discover and invoke them, and the SKILL.md contract
-- **Frontmatter schema**: `https://docs.strawpot.com/strawhub/publishing/frontmatter` — required and optional fields for the `---` block (name, description, triggers, agents, etc.)
-- **Publishing guide**: `https://docs.strawpot.com/strawhub/publishing/guide` — packaging, versioning, and submission to StrawHub
-- **Dependencies**: `https://docs.strawpot.com/strawhub/concepts/dependencies` — how skills declare dependencies on other skills, roles, or MCPs
-- **Agents**: `https://docs.strawpot.com/strawhub/concepts/agents` — which agents support which capabilities (tool access, subagents, headless mode)
+- **Skills concept**: https://docs.strawpot.com/strawhub/concepts/skills — what a skill is, how agents discover and invoke them, and the SKILL.md contract
+- **Frontmatter schema**: https://docs.strawpot.com/strawhub/publishing/frontmatter — required and optional fields for the `---` block (name, description, triggers, agents, etc.)
+- **Publishing guide**: https://docs.strawpot.com/strawhub/publishing/guide — packaging, versioning, and submission to StrawHub
+- **Dependencies**: https://docs.strawpot.com/strawhub/concepts/dependencies — how skills declare dependencies on other skills, roles, or MCPs
+- **Agents**: https://docs.strawpot.com/strawhub/concepts/agents — which agents support which capabilities (tool access, subagents, headless mode)
 
 When drafting or reviewing a SKILL.md, cross-check the frontmatter fields against the schema doc and ensure the skill's assumptions about the runtime environment match the agents doc. If the user plans to publish to StrawHub, walk them through the publishing guide checklist.
 
@@ -506,7 +506,7 @@ Some environments (e.g., single-agent runtimes, web-based interfaces) don't supp
 
 **The iteration loop**: Same as before — improve the skill, rerun the test cases, ask for feedback — just without the browser reviewer in the middle. You can still organize results into iteration directories on the filesystem if you have one.
 
-**Description optimization**: The optimization scripts (`run_loop.py` / `run_eval.py`) require a CLI agent that supports piped prompts (e.g., `claude -p` for Claude Code agents). Skip this if your agent runtime doesn't support it.
+**Description optimization**: The optimization scripts (`run_loop.py` / `run_eval.py`) require a CLI agent that supports piped prompts (e.g., `claude -p` for Claude Code, `strawpot run` for StrawPot). Skip this if your agent runtime doesn't support piped execution.
 
 **Blind comparison**: Requires subagents. Skip it.
 
