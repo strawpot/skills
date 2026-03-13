@@ -31,6 +31,21 @@ The people creating roles range from engineers building production agent teams t
 
 ---
 
+## StrawPot Documentation Reference
+
+Before creating or improving a role, consult the official StrawPot documentation to ensure compliance with the latest spec. Fetch the relevant pages using WebFetch during the research phase:
+
+- **Roles concept**: `https://docs.strawpot.com/strawhub/concepts/roles` — what a role is, ROLE.md contract, worker vs orchestrator patterns, and how roles compose into teams
+- **Skills concept**: `https://docs.strawpot.com/strawhub/concepts/skills` — how roles declare skill dependencies and how agents load them
+- **Dependencies**: `https://docs.strawpot.com/strawhub/concepts/dependencies` — declaring dependencies on skills, sub-roles, and MCPs
+- **Agents**: `https://docs.strawpot.com/strawhub/concepts/agents` — agent capabilities, tool access, and which agents can run which roles
+- **Delegation**: `https://docs.strawpot.com/concepts/delegation` — how orchestrators delegate to sub-agents, task routing, and concurrency patterns
+- **Architecture**: `https://docs.strawpot.com/concepts/architecture` — team topologies (hub-and-spoke, layered, peer-to-peer) and isolation boundaries
+- **Frontmatter schema**: `https://docs.strawpot.com/strawhub/publishing/frontmatter` — required and optional fields for the `---` block
+- **Publishing guide**: `https://docs.strawpot.com/strawhub/publishing/guide` — packaging, versioning, and submission to StrawHub
+
+When drafting or reviewing a ROLE.md, cross-check the frontmatter fields against the schema doc. Verify that the role's delegation assumptions match the delegation and architecture docs. If the role depends on skills or sub-roles, ensure they're declared per the dependencies spec.
+
 ## Creating a role
 
 ### Capture Intent

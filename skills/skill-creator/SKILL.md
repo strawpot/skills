@@ -52,6 +52,18 @@ Not everything needs to be a skill. Before diving in, help the user check:
 
 Skills shine when the behavior is **reusable across projects or sessions**, involves **multi-step judgment** that benefits from structured instructions, or needs to be **shared with others** via StrawHub. If the user's need fits one of those, proceed.
 
+## StrawPot Documentation Reference
+
+Before creating or improving a skill, consult the official StrawPot documentation to ensure compliance with the latest spec. Fetch the relevant pages using WebFetch during the research phase:
+
+- **Skills concept**: `https://docs.strawpot.com/strawhub/concepts/skills` — what a skill is, how agents discover and invoke them, and the SKILL.md contract
+- **Frontmatter schema**: `https://docs.strawpot.com/strawhub/publishing/frontmatter` — required and optional fields for the `---` block (name, description, triggers, agents, etc.)
+- **Publishing guide**: `https://docs.strawpot.com/strawhub/publishing/guide` — packaging, versioning, and submission to StrawHub
+- **Dependencies**: `https://docs.strawpot.com/strawhub/concepts/dependencies` — how skills declare dependencies on other skills, roles, or MCPs
+- **Agents**: `https://docs.strawpot.com/strawhub/concepts/agents` — which agents support which capabilities (tool access, subagents, headless mode)
+
+When drafting or reviewing a SKILL.md, cross-check the frontmatter fields against the schema doc and ensure the skill's assumptions about the runtime environment match the agents doc. If the user plans to publish to StrawHub, walk them through the publishing guide checklist.
+
 ## Creating a skill
 
 ### Capture Intent
