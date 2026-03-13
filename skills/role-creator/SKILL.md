@@ -35,10 +35,9 @@ The people creating roles range from engineers building production agent teams t
 
 Not everything needs to be a role. Before diving in, help the user check:
 
-- **Just need custom instructions?** A project config entry (`strawpot.toml`, `CLAUDE.md`) is simpler and doesn't need packaging.
-- **Just need a reusable workflow?** That's a skill, not a role. Use skill-creator instead.
-- **Single agent, no delegation?** If there's no team and no routing, a role adds overhead without benefit — project config or a skill is enough.
-- **Only one agent will ever use this?** If it won't be shared or reused across teams, consider whether project-level config is sufficient.
+- **Just need a reusable workflow?** That's a skill, not a role. Use skill-creator instead. Skills define *what to do*; roles define *who does it*.
+- **Single agent, no delegation?** If there's no team and no routing, a skill is enough — roles add value when agents need identity, boundaries, and delegation targets.
+- **No need for scope boundaries?** If the agent doesn't need to know what it should *not* do (to avoid overlap with other roles), a skill covers it.
 
 Roles shine when you need to **define an agent's identity and boundaries** within a multi-agent team, when **orchestrators need to route tasks** to the right specialist, or when the behavior definition needs to be **shared across teams** via StrawHub. If the user's need fits one of those, proceed.
 
