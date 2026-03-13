@@ -31,18 +31,29 @@ The people creating roles range from engineers building production agent teams t
 
 ---
 
+## Before you start: does this need to be a role?
+
+Not everything needs to be a role. Before diving in, help the user check:
+
+- **Just need custom instructions?** A project config entry (`strawpot.toml`, `CLAUDE.md`) is simpler and doesn't need packaging.
+- **Just need a reusable workflow?** That's a skill, not a role. Use skill-creator instead.
+- **Single agent, no delegation?** If there's no team and no routing, a role adds overhead without benefit — project config or a skill is enough.
+- **Only one agent will ever use this?** If it won't be shared or reused across teams, consider whether project-level config is sufficient.
+
+Roles shine when you need to **define an agent's identity and boundaries** within a multi-agent team, when **orchestrators need to route tasks** to the right specialist, or when the behavior definition needs to be **shared across teams** via StrawHub. If the user's need fits one of those, proceed.
+
 ## StrawPot Documentation Reference
 
 Before creating or improving a role, consult the official StrawPot documentation to ensure compliance with the latest spec. Fetch the relevant pages using WebFetch during the research phase:
 
-- **Roles concept**: `https://docs.strawpot.com/strawhub/concepts/roles` — what a role is, ROLE.md contract, worker vs orchestrator patterns, and how roles compose into teams
-- **Skills concept**: `https://docs.strawpot.com/strawhub/concepts/skills` — how roles declare skill dependencies and how agents load them
-- **Dependencies**: `https://docs.strawpot.com/strawhub/concepts/dependencies` — declaring dependencies on skills, sub-roles, and MCPs
-- **Agents**: `https://docs.strawpot.com/strawhub/concepts/agents` — agent capabilities, tool access, and which agents can run which roles
-- **Delegation**: `https://docs.strawpot.com/concepts/delegation` — how orchestrators delegate to sub-agents, task routing, and concurrency patterns
-- **Architecture**: `https://docs.strawpot.com/concepts/architecture` — team topologies (hub-and-spoke, layered, peer-to-peer) and isolation boundaries
-- **Frontmatter schema**: `https://docs.strawpot.com/strawhub/publishing/frontmatter` — required and optional fields for the `---` block
-- **Publishing guide**: `https://docs.strawpot.com/strawhub/publishing/guide` — packaging, versioning, and submission to StrawHub
+- **Roles concept**: https://docs.strawpot.com/strawhub/concepts/roles — what a role is, ROLE.md contract, worker vs orchestrator patterns, and how roles compose into teams
+- **Skills concept**: https://docs.strawpot.com/strawhub/concepts/skills — how roles declare skill dependencies and how agents load them
+- **Dependencies**: https://docs.strawpot.com/strawhub/concepts/dependencies — declaring dependencies on skills, sub-roles, and MCPs
+- **Agents**: https://docs.strawpot.com/strawhub/concepts/agents — agent capabilities, tool access, and which agents can run which roles
+- **Delegation**: https://docs.strawpot.com/concepts/delegation — how orchestrators delegate to sub-agents, task routing, and concurrency patterns
+- **Architecture**: https://docs.strawpot.com/concepts/architecture — team topologies (hub-and-spoke, layered, peer-to-peer) and isolation boundaries
+- **Frontmatter schema**: https://docs.strawpot.com/strawhub/publishing/frontmatter — required and optional fields for the `---` block
+- **Publishing guide**: https://docs.strawpot.com/strawhub/publishing/guide — packaging, versioning, and submission to StrawHub
 
 When drafting or reviewing a ROLE.md, cross-check the frontmatter fields against the schema doc. Verify that the role's delegation assumptions match the delegation and architecture docs. If the role depends on skills or sub-roles, ensure they're declared per the dependencies spec.
 
@@ -67,7 +78,7 @@ Probe deeper. As the interview progresses, determine whether this role is a **wo
 - What does the workflow look like step by step?
 - What should this role explicitly NOT do? (prevents scope creep and overlap)
 - Are there existing roles it might overlap with?
-- Does it need a skill that doesn't exist yet? If so, that skill needs to be created first — consider using skill-creator.
+- Does it need a skill that doesn't exist yet? If so, that skill should be created first. Pause the role creation, use skill-creator to build the skill, then come back and continue the role. The role's dependency list should only reference skills that exist (or are being created in parallel).
 
 **For orchestrator roles:**
 - What types of tasks will it receive?
@@ -206,13 +217,23 @@ The identity statement and "What you are/do not" sections are shared across both
 
 #### Inter-role Communication
 
-Roles communicate via **denden** — the built-in protocol for delegation and messaging between agents. When writing orchestrator roles, reference denden explicitly:
+Roles communicate via **denden** — StrawPot's built-in skill for delegation and messaging between agents. Denden is always available (it ships with every StrawPot installation), so you never need to declare it as a dependency.
 
-- Orchestrators delegate tasks via denden's delegation format
-- Workers can ask clarifying questions back to the delegator via denden
-- Results flow back through denden when a delegated task completes
+When writing orchestrator roles, reference denden explicitly in the role body so the agent knows how to delegate:
 
-Reference it in the body: "Delegate via the denden skill — follow its instructions for the exact delegation format."
+```markdown
+## Delegating tasks
+Use the denden skill for all delegation. Follow its task format:
+provide a clear task description, expected deliverable, and any
+relevant context the worker needs.
+```
+
+Key denden capabilities to be aware of when designing roles:
+- **Task delegation**: orchestrators send structured tasks to workers
+- **Clarification requests**: workers can ask the delegator for more context
+- **Result delivery**: completed work flows back to the delegator with a summary
+
+You don't need to re-explain denden's format in the role — just tell the agent to follow denden's instructions. The denden skill handles the rest.
 
 ### Role Writing Guide
 
@@ -259,7 +280,7 @@ Some roles are **hybrid** — they do some work themselves and delegate specific
 
 ### Smoke-test the Role
 
-After writing the draft, validate it with the user. This is the role equivalent of running test cases — lighter than skill evals, but essential.
+After writing the draft, validate it in two stages: first a design walkthrough (fast, catches structural issues), then optionally a runtime test (slower, catches prompt-level issues).
 
 **1. Read the ROLE.md back** — summarize what the role does, its dependencies, and its boundaries. Make sure you and the user agree on the scope.
 
@@ -282,6 +303,25 @@ Example walkthrough for an orchestrator:
 **4. Validate dependencies** — confirm that all referenced skills and roles actually exist (or will be created). Missing dependencies mean the agent gets instructions that reference tools it doesn't have.
 
 **5. Check the "NOT do" section** — make sure every out-of-scope item maps to a specific other role or is explicitly out of the team's scope.
+
+#### Runtime Testing (optional but recommended)
+
+Design walkthroughs catch structural issues, but runtime testing catches prompt-level problems — cases where the ROLE.md reads well but the agent misinterprets instructions, goes out of scope, or fumbles the workflow. If the user has StrawPot set up, offer to run the role against a real task:
+
+```bash
+# Run the role against a test task
+strawpot run --role ./my-role "Fix the login bug where emails with '+' return 500"
+```
+
+Pick 1-2 tasks from the walkthrough and actually run them. Watch for:
+- Does the agent follow the workflow steps in order?
+- Does it stay within scope, or does it wander into "NOT do" territory?
+- For orchestrators: does it route to the right sub-role? Does it actually delegate rather than doing the work itself?
+- Does it reference its skill dependencies correctly?
+
+Share the results with the user. If the agent misbehaves, the fix is usually in the role body — clarify the instruction it misunderstood, tighten a boundary, or add an example.
+
+Runtime testing is optional — many roles work correctly from the first draft, and some users prefer to iterate on live tasks rather than synthetic ones. But for complex orchestrators or roles with nuanced routing logic, a quick runtime test saves time later.
 
 ### Iterate
 
@@ -351,7 +391,7 @@ ceo → [pr-reviewer → [code-reviewer, test-analyzer], implementer]
 
 - **Single responsibility**: Each role does one thing well. If you can't describe the role's job in one sentence, it's probably doing too much.
 - **Clear boundaries**: If two roles might handle the same task, define explicitly which one owns it. Ambiguity in boundaries is the #1 source of team dysfunction.
-- **Fallback path**: Always have a general-purpose role (like `ai-employee`) for tasks that don't fit a specialist. Without a fallback, unroutable tasks just fail.
+- **Fallback path**: Always have a general-purpose fallback role for tasks that don't fit a specialist (the user's may be called `ai-employee`, `generalist`, etc.). Without a fallback, unroutable tasks just fail.
 - **Minimal orchestration**: Don't add an orchestrator unless you have 3+ workers that need routing. With 1-2 workers, direct delegation is simpler and faster.
 - **Verify completeness**: After designing all roles, list 10 realistic tasks and trace each one through the team. Every task should have a clear path to a role that can handle it. If tasks fall through the cracks, you have a coverage gap.
 
@@ -383,6 +423,20 @@ strawhub publish role ./my-role --tag orchestrator --tag devops
 - File constraints: max 20 files per package, max 512 KB per file
 
 Alternatively, publish via the StrawHub web UI at strawhub.dev/upload.
+
+---
+
+## Environments without subagents or display
+
+Some environments (single-agent runtimes, web-based interfaces, headless servers) have constraints. The core workflow is the same — interview, draft, smoke-test, iterate — but adapt these mechanics:
+
+**Design walkthroughs**: Work in all environments. No tools needed — it's a conversation exercise.
+
+**Runtime testing**: If `strawpot run` isn't available, read the ROLE.md yourself and simulate how you'd handle each test task. Less rigorous (you wrote the role and you're testing it), but it catches obvious prompt issues. Present the simulated outputs inline and ask the user for feedback.
+
+**Team visualization**: If you can't render diagrams, describe the team structure in text using the arrow notation from the Team Patterns section (e.g., `ceo → [implementer, pr-reviewer → [code-reviewer, test-analyzer]]`).
+
+**Publishing**: `strawhub publish` works from any terminal with authentication. The web UI at strawhub.dev/upload works from any browser.
 
 ---
 
@@ -440,6 +494,10 @@ You are a routing layer for [domain]. You do not do the work yourself.
 ## First step: discover your team
 Read every ROLE.md in your `roles/` directory.
 
+## Delegating tasks
+Use the denden skill for all delegation. Provide a clear task
+description, expected deliverable, and relevant context.
+
 ## Routing
 - [Task type A] → `worker-a`
 - [Task type B] → `worker-b`
@@ -464,6 +522,8 @@ Use this to make sure you haven't missed anything:
 - [ ] "What you do NOT do" section covers scope boundaries with pointers to who owns each
 - [ ] No circular delegation paths in the team graph
 - [ ] Walked through 3-5 realistic tasks to validate routing and workflow
+- [ ] Orchestrator roles reference denden for delegation (no need to declare it as a dependency — it's built-in)
+- [ ] If feasible, ran at least 1-2 tasks via `strawpot run --role` to catch prompt-level issues
 - [ ] Role body is 60-140 lines — lean, not bloated
 - [ ] Style matches existing roles in the user's team
 - [ ] After deploying, observe real delegation behavior and iterate — the smoke-test catches design issues, but runtime reveals the rest
