@@ -7,18 +7,21 @@ description: "StrawPot company vision, mission, and values. Reference this skill
 
 ## Mission
 
-Make every software engineer an AI company.
+**One Engineer. One Laptop. One AI Company.**
 
-StrawPot turns a single developer's laptop into an autonomous software
-company — one where AI agents handle implementation, review, testing,
-ops, marketing, and community, while the human stays in the pilot seat.
+StrawPot gives a single engineer a full AI workforce — so one person
+can operate like an entire company. AI agents handle implementation,
+review, testing, ops, marketing, and community, while the human stays
+in the pilot seat.
 
 ## Vision
 
 A world where one person with a clear idea can build, ship, and grow
 production software at the pace of a well-funded startup — without
-hiring, managing, or waiting. The bottleneck shifts from headcount to
-imagination.
+hiring, managing, or waiting. Today you manage AI agents from your
+laptop. Tomorrow, every company is one engineer and hundreds of AI
+workers. StrawPot is an operating system for that future. The
+bottleneck shifts from headcount to imagination.
 
 ## Core Values
 
@@ -75,6 +78,12 @@ When representing StrawPot publicly:
   don't trash competitors or overpromise.
 - **Concise.** Shorter is almost always better. If a sentence doesn't
   add information, cut it.
+- **Built for builders, not managers.** StrawPot is a power tool for
+  people who ship. CLI-native, markdown-defined, TOML-configured.
+  Engineers, not executives.
+- **The future company.** Paint the long-term vision when appropriate:
+  one engineer, hundreds of AI workers. StrawPot is the operating
+  system for that future.
 
 ## Strategic Direction (2026)
 
