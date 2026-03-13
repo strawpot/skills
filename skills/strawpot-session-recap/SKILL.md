@@ -5,50 +5,77 @@ description: Write a Session Recap at the end of every response so strawpot can 
 
 # Session Recap
 
-At the end of **every response**, append a `## Session Recap` section:
+IMPORTANT — complete your full response first (code changes, explanations, answers). Then, as the very last section, append a `## Session Recap` with these subsections:
 
 ```
 ## Session Recap
-<one or two sentences: what you accomplished and any key outcome or decision>
+### Accomplished
+- What was done, with specifics (file paths, function names, error fixes)
+### Changes Made
+- Files modified and what changed in each
+### Decisions
+- Key choices and why (e.g., "used X over Y because…")
+### Open Items
+- What's left to do, blockers, or questions for the user
 ```
 
 ## Rules
 
-- Always include it, even for short or simple tasks
-- One or two sentences maximum — no bullet lists, no markdown formatting inside the recap
+- Always include the recap, even for short or simple tasks
+- Complete your actual work first — the recap is always the very last section
 - Describe what was actually done, not what was asked
 - If the task failed or was blocked, say so and why
+- For informational or conversational responses where no code changes were made, summarize the key points delivered instead (subsections may be omitted if irrelevant)
 
 ## Examples
 
 **Good:**
 ```
 ## Session Recap
-Implemented the login form with email/password validation and wired it to the auth API. Left the forgot-password flow for the next task.
+### Accomplished
+- Implemented login form with email/password validation, wired to auth API
+### Changes Made
+- src/components/LoginForm.tsx: new component with validation logic
+- src/api/auth.ts: added `login()` endpoint call
+### Decisions
+- Used zod for validation over manual regex — consistent with existing forms
+### Open Items
+- Forgot-password flow left for next task
 ```
 
 ```
 ## Session Recap
-Reviewed the payment module — found a missing idempotency key on the refund endpoint and flagged it for the implementer.
+### Accomplished
+- Reviewed payment module, found missing idempotency key on refund endpoint
+### Changes Made
+- (none — review only)
+### Decisions
+- Flagged for implementer rather than fixing directly due to scope
+### Open Items
+- Refund endpoint needs idempotency key before going to prod
 ```
 
 ```
 ## Session Recap
-Could not complete the migration: the staging database was unreachable. Blocked on infra access.
+### Accomplished
+- Could not complete the migration: staging database was unreachable
+### Changes Made
+- (none — blocked)
+### Decisions
+- N/A
+### Open Items
+- Blocked on infra access to staging DB
 ```
 
-**Bad (too vague):**
+**Bad (no actual work before recap):**
 ```
 ## Session Recap
-Completed the task successfully.
+### Accomplished
+- Completed the task successfully.
 ```
 
-**Bad (markdown inside recap):**
-```
-## Session Recap
-- Fixed bug in auth
-- Updated tests
-```
+**Bad (recap without doing the work first):**
+An agent that outputs only a Session Recap without performing the requested task is broken. The recap summarizes work — it is not a substitute for doing the work.
 
 ## Why
 
