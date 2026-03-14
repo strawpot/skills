@@ -34,28 +34,47 @@ Use denden to delegate to your own role. The task description should contain:
 - Your **complete output** (so the evaluator can assess it)
 - Clear instruction that this is an **evaluation pass**, not a new task
 
-```bash
-denden send "$(cat <<'DENDEN'
-{"delegate":{"delegateTo":"","task":{"text":"## Evaluation request\n\nYou are evaluating work produced by a previous instance of your role. Do NOT redo the task. Instead, review the output critically and provide specific, actionable feedback.\n\n### Original task\n[paste the original task here]\n\n### Output to evaluate\n[paste the complete output here]\n\n### Instructions\nReview the output against the original task. For each issue found:\n1. State what is wrong or could be improved\n2. Explain why it matters\n3. Suggest the specific fix\n\nIf the output fully satisfies the task with no meaningful improvements possible, respond with exactly: NO_FURTHER_IMPROVEMENTS\n\nDo not suggest cosmetic changes, style preferences, or improvements beyond the task scope. Only flag issues that would materially affect the quality or correctness of the output.","returnFormat":"TEXT"}}}
-DENDEN
-)"
+Use `delegateTo: ""` (empty string) for self-delegation. The orchestrator resolves it to your own role automatically. Structure the task text like this:
+
+```
+## Evaluation request
+
+You are evaluating work produced by a previous instance of your role.
+Do NOT redo the task. Instead, review the output critically and provide
+specific, actionable feedback.
+
+### Original task
+{paste the original task here}
+
+### Output to evaluate
+{paste the complete output here}
+
+### Instructions
+Review the output against the original task. For each issue found:
+1. State what is wrong or could be improved
+2. Explain why it matters
+3. Suggest the specific fix
+
+If the output fully satisfies the task with no meaningful improvements
+possible, respond with exactly: NO_FURTHER_IMPROVEMENTS
+
+Do not suggest cosmetic changes, style preferences, or improvements
+beyond the task scope. Only flag issues that would materially affect
+the quality or correctness of the output.
 ```
 
-Note: `delegateTo` is empty — the orchestrator automatically resolves it to your own role.
+Send via denden:
+
+```bash
+denden send '{"delegate":{"delegateTo":"","task":{"text":"<evaluation prompt above>","returnFormat":"TEXT"}}}'
+```
 
 ### Step 3: Process the feedback
 
-Read the evaluation response:
-
-```bash
-response=$(denden send '...')
-feedback=$(echo "$response" | python3 -c "import json,sys; print(json.load(sys.stdin).get('delegateResult',{}).get('text',''))")
-```
-
-Check the feedback:
-- If it contains `NO_FURTHER_IMPROVEMENTS` — you're done, deliver the output
-- If it contains specific feedback — apply the improvements and go back to step 2
-- If the delegation fails with `DENY_DEPTH_LIMIT` — you've hit the iteration cap, deliver your best output so far
+Read `delegateResult.text` from the denden response. Check:
+- Contains `NO_FURTHER_IMPROVEMENTS` — you're done, deliver the output
+- Contains specific feedback — apply the improvements and go back to step 2
+- Delegation fails with `DENY_DEPTH_LIMIT` — you've hit the iteration cap, deliver your best output so far
 
 ### Step 4: Apply improvements and repeat
 
