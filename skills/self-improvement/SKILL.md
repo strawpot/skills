@@ -19,7 +19,7 @@ The depth limit (`max_depth`) naturally caps the number of iterations. This is t
 
 ## Prerequisites
 
-Self-delegation works because denden does not enforce the Delegation section as a whitelist — any role slug is accepted. Your own role slug is available as the role name in your prompt's header. No special role dependency declaration is needed.
+Self-delegation is built into denden. Set `delegateTo` to an empty string `""` and the orchestrator resolves it to your own role automatically. Alternatively, your role slug is available in the `$STRAWPOT_ROLE` environment variable. No special role dependency declaration is needed.
 
 ## The evaluation loop
 
@@ -36,12 +36,12 @@ Use denden to delegate to your own role. The task description should contain:
 
 ```bash
 denden send "$(cat <<'DENDEN'
-{"delegate":{"delegateTo":"YOUR_ROLE_SLUG","task":{"text":"## Evaluation request\n\nYou are evaluating work produced by a previous instance of your role. Do NOT redo the task. Instead, review the output critically and provide specific, actionable feedback.\n\n### Original task\n[paste the original task here]\n\n### Output to evaluate\n[paste the complete output here]\n\n### Instructions\nReview the output against the original task. For each issue found:\n1. State what is wrong or could be improved\n2. Explain why it matters\n3. Suggest the specific fix\n\nIf the output fully satisfies the task with no meaningful improvements possible, respond with exactly: NO_FURTHER_IMPROVEMENTS\n\nDo not suggest cosmetic changes, style preferences, or improvements beyond the task scope. Only flag issues that would materially affect the quality or correctness of the output.","returnFormat":"TEXT"}}}
+{"delegate":{"delegateTo":"","task":{"text":"## Evaluation request\n\nYou are evaluating work produced by a previous instance of your role. Do NOT redo the task. Instead, review the output critically and provide specific, actionable feedback.\n\n### Original task\n[paste the original task here]\n\n### Output to evaluate\n[paste the complete output here]\n\n### Instructions\nReview the output against the original task. For each issue found:\n1. State what is wrong or could be improved\n2. Explain why it matters\n3. Suggest the specific fix\n\nIf the output fully satisfies the task with no meaningful improvements possible, respond with exactly: NO_FURTHER_IMPROVEMENTS\n\nDo not suggest cosmetic changes, style preferences, or improvements beyond the task scope. Only flag issues that would materially affect the quality or correctness of the output.","returnFormat":"TEXT"}}}
 DENDEN
 )"
 ```
 
-Replace `YOUR_ROLE_SLUG` with your actual role slug from your prompt header.
+Note: `delegateTo` is empty — the orchestrator automatically resolves it to your own role.
 
 ### Step 3: Process the feedback
 
