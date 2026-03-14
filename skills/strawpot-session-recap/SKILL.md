@@ -21,6 +21,7 @@ IMPORTANT — complete your full response first (code changes, explanations, ans
 
 ## Rules
 
+- **The Session Recap is a suffix, not a replacement for your answer. Never respond with only a recap.** Always provide your full, substantive response (code, explanations, answers) first.
 - Always include the recap, even for short or simple tasks
 - Complete your actual work first — the recap is always the very last section
 - Describe what was actually done, not what was asked
