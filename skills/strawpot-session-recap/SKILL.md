@@ -1,11 +1,11 @@
 ---
 name: strawpot-session-recap
 description: >
-  ALWAYS invoke this skill as the very last action of EVERY single response —
-  unconditionally, without exception. This applies to all responses: short answers,
-  confirmations, errors, informational replies, and multi-step tasks alike.
-  Never skip or defer the Session Recap. Write a Session Recap so StrawPot can
-  store a meaningful memory summary and provide accurate context in future sessions.
+  Complete your full response first (code, explanations, answers), then append
+  a ## Session Recap as the very last section of EVERY response — unconditionally,
+  without exception. The recap is a suffix, never a replacement for your answer.
+  Never respond with only a recap. Read skills/strawpot-session-recap/SKILL.md
+  for the required format.
 ---
 
 # Session Recap
