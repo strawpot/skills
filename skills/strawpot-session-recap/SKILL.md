@@ -1,6 +1,11 @@
 ---
 name: strawpot-session-recap
-description: Write a Session Recap at the end of every response so strawpot can store a meaningful memory summary and provide accurate context in future sessions.
+description: >
+  Complete your full response first (code, explanations, answers), then append
+  a ## Session Recap as the very last section of EVERY response — unconditionally,
+  without exception. The recap is a suffix, never a replacement for your answer.
+  Never respond with only a recap. Read skills/strawpot-session-recap/SKILL.md
+  for the required format.
 ---
 
 # Session Recap
@@ -21,7 +26,8 @@ IMPORTANT — complete your full response first (code changes, explanations, ans
 
 ## Rules
 
-- Always include the recap, even for short or simple tasks
+- **UNCONDITIONAL**: The Session Recap must appear at the end of every single response. There are no exceptions — not for short answers, confirmations, one-liners, errors, or conversational replies.
+- **The Session Recap is a suffix, not a replacement for your answer. Never respond with only a recap.** Always provide your full, substantive response (code, explanations, answers) first.
 - Complete your actual work first — the recap is always the very last section
 - Describe what was actually done, not what was asked
 - If the task failed or was blocked, say so and why
