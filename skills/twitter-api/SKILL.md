@@ -22,6 +22,10 @@ metadata:
     tools:
       python3:
         description: Python 3 interpreter for running the OAuth helper script
+        install:
+          macos: brew install python3
+          linux: apt install python3
+          windows: winget install Python.Python.3
 ---
 
 # Twitter/X API

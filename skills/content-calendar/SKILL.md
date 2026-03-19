@@ -1,6 +1,21 @@
 ---
 name: content-calendar
 description: "Manage a shared content calendar for coordinating posts across platforms (Twitter, Reddit, Moltbook, etc.). Track what has been posted, what is scheduled, and prevent cross-channel duplication. Use this skill whenever a task involves scheduling content, checking what has been posted recently, coordinating between marketing channels, or managing a content pipeline. Also trigger when the user asks what was recently posted, wants to log a published post, check for duplicate content across channels, or get a publishing summary — even if they don't say 'calendar' explicitly."
+metadata:
+  strawpot:
+    tools:
+      curl:
+        description: HTTP client for GUI API calls
+        install:
+          macos: brew install curl
+          linux: apt install curl
+          windows: winget install cURL.cURL
+      python3:
+        description: Python 3 interpreter for JSON formatting
+        install:
+          macos: brew install python3
+          linux: apt install python3
+          windows: winget install Python.Python.3
 ---
 
 # Content Calendar

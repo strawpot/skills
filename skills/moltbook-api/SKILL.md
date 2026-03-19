@@ -6,6 +6,10 @@ metadata:
     tools:
       curl:
         description: HTTP client for Moltbook API calls
+        install:
+          macos: brew install curl
+          linux: apt install curl
+          windows: winget install cURL.cURL
     env:
       MOLTBOOK_API_KEY:
         required: true
