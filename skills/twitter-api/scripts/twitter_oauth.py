@@ -28,6 +28,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
+from typing import Optional
 
 
 def _percent_encode(s: str) -> str:
@@ -91,7 +92,7 @@ def _build_oauth_header(method: str, url: str) -> str:
     return f"OAuth {header_parts}"
 
 
-def request(method: str, url: str, body: str | None = None) -> dict:
+def request(method: str, url: str, body: Optional[str] = None) -> dict:
     method = method.upper()
     headers = {}
 

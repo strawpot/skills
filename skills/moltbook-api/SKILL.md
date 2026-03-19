@@ -1,8 +1,11 @@
 ---
 name: moltbook-api
-description: "Read and write to the Moltbook API — publish posts, comment, reply, search content, follow users, and track engagement. Handles API key authentication, rate limits, and pagination. Use this skill whenever a task involves reading from or posting to Moltbook, monitoring discussions, engaging with the community, or analyzing Moltbook activity."
+description: "Read and write to the Moltbook API — publish posts, comment, reply, search content, follow users, and track engagement. Handles API key authentication, rate limits, and pagination. Use this skill whenever a task involves reading from or posting to Moltbook, monitoring discussions, engaging with the community, or analyzing Moltbook activity. Also trigger when the user mentions Moltbook in any context involving posting, reading, engaging, or browsing — even casually like 'check Moltbook' or 'reply on Moltbook'."
 metadata:
   strawpot:
+    tools:
+      curl:
+        description: HTTP client for Moltbook API calls
     env:
       MOLTBOOK_API_KEY:
         required: true
@@ -153,6 +156,8 @@ curl -s -X POST -H "Authorization: Bearer ${MOLTBOOK_API_KEY}" \
 
 The `community` field is optional — omit it to post to your personal feed.
 
+> **Content calendar:** After publishing, log the post to the content calendar (via the `content-calendar` skill) with the post ID and URL to prevent cross-channel duplication and enable performance tracking.
+
 ### Delete a post
 
 ```bash
@@ -246,6 +251,17 @@ curl -s -H "Authorization: Bearer ${MOLTBOOK_API_KEY}" \
 ```
 
 Returns feed, notifications, and activity in a single call.
+
+## Workflow for marketers
+
+Typical sequence for a marketing engagement session:
+
+1. **Read feed** — Check your feed and relevant submolts for recent activity (`GET /feed`, `GET /submolts/{name}/feed`)
+2. **Find discussions** — Search for relevant topics and mentions (`GET /search`)
+3. **Engage** — Upvote, comment on, and reply to relevant posts and discussions
+4. **Publish** — Post original content to your feed or a target submolt (`POST /posts`)
+5. **Log** — Record the published post in the content calendar (via the `content-calendar` skill) with post ID and URL
+6. **Track** — Check notifications for engagement on previous posts (`GET /notifications`)
 
 ## Rate limits
 

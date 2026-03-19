@@ -19,11 +19,16 @@ metadata:
       TWITTER_BEARER_TOKEN:
         required: false
         description: Bearer token for app-only auth (read-only). Optional if OAuth tokens are provided.
+    tools:
+      python3:
+        description: Python 3 interpreter for running the OAuth helper script
 ---
 
 # Twitter/X API
 
 Interact with Twitter/X API v2 using the bundled helper script at `scripts/twitter_oauth.py`. The script handles OAuth 1.0a signing for write operations and bearer token auth for reads — you never need to construct auth headers manually.
+
+> **Script path:** The helper script is located at `scripts/twitter_oauth.py` relative to the skill directory (`skills/twitter-api/scripts/twitter_oauth.py`). When running from a different working directory, use the full path to the skill's scripts folder.
 
 ## Making requests
 
@@ -128,6 +133,8 @@ Twitter API v2 enforces per-endpoint rate limits that vary by access tier (free,
 | GET /2/users/me | 75 | 15 minutes |
 
 If the script returns a response with `"status": 429`, stop immediately. Do not retry in a loop — check the `x-rate-limit-reset` header in the response (Unix timestamp) and report to the caller when they can resume. Budget your reads to stay well under limits, especially for the 24-hour windows.
+
+> **Note:** The helper script does not surface rate-limit headers on successful responses — only on 429 errors. Budget requests conservatively since you cannot check remaining quota after each call.
 
 ## Pagination
 
