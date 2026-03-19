@@ -1,6 +1,6 @@
 ---
 name: twitter-api
-description: "Read and write to the Twitter/X API — fetch timelines, post tweets, reply, search, like, retweet, and look up users. Handles OAuth 1.0a signing, bearer token auth, rate limits, and pagination. Use this skill whenever a task involves reading from or posting to Twitter/X, monitoring Twitter accounts, engaging with tweets, or analyzing Twitter activity — even if the user just says 'tweet' or 'post on X'."
+description: "Read and write to the Twitter/X API — supports both write-only mode (free tier) and full read+write (paid tier). Post tweets, reply, like, retweet on free tier; additionally fetch timelines, search, and look up mentions on Basic tier ($200/mo) or higher. Handles OAuth 1.0a signing, bearer token auth, rate limits, and pagination. Use this skill whenever a task involves reading from or posting to Twitter/X, monitoring Twitter accounts, engaging with tweets, or analyzing Twitter activity — even if the user just says 'tweet' or 'post on X'."
 metadata:
   strawpot:
     env:
@@ -18,12 +18,30 @@ metadata:
         description: OAuth 1.0a access token secret
       TWITTER_BEARER_TOKEN:
         required: false
-        description: Bearer token for app-only auth (read-only). Optional if OAuth tokens are provided.
+        description: Bearer token for app-only auth (read-only). Not needed on free tier — free tier uses OAuth for posting and has no read access. Required for read endpoints on Basic tier or higher.
 ---
 
 # Twitter/X API
 
 Interact with Twitter/X API v2 using the bundled helper script at `scripts/twitter_oauth.py`. The script handles OAuth 1.0a signing for write operations and bearer token auth for reads — you never need to construct auth headers manually.
+
+## Access Tier
+
+> **Current configuration: FREE TIER (post-only)**
+
+The free tier supports **write operations only** plus basic identity lookup:
+
+| Endpoint | Free Tier | Basic ($200/mo)+ |
+|---|---|---|
+| POST /2/tweets (post, reply) | ✅ 17 posts / 24hr | ✅ |
+| POST likes, retweets | ✅ | ✅ |
+| GET /2/users/me | ✅ 75 / 15min | ✅ |
+| GET /2/users/:id/tweets (timeline) | ❌ 403 | ✅ |
+| GET /2/tweets/search/recent | ❌ 403 | ✅ |
+| GET /2/users/:id/mentions | ❌ 403 | ✅ |
+| GET /2/users/by/username/:username | ❌ 403 | ✅ |
+
+**On free tier, all read endpoints except `/2/users/me` will return HTTP 403.** Do not attempt them — they will fail. If you need read access, the account must be upgraded to Basic tier ($200/mo) or higher in the Twitter Developer Portal.
 
 ## Making requests
 
@@ -53,12 +71,16 @@ Save the `data.id` value — you'll need it for timeline, mentions, likes, and r
 
 ### Read timeline
 
+> ⚠️ **Requires Basic tier or higher — not available on free tier** (returns 403)
+
 ```bash
 python scripts/twitter_oauth.py GET \
   "https://api.x.com/2/users/{user_id}/tweets?max_results=10&tweet.fields=created_at,public_metrics,conversation_id"
 ```
 
 ### Search recent tweets
+
+> ⚠️ **Requires Basic tier or higher — not available on free tier** (returns 403)
 
 ```bash
 python scripts/twitter_oauth.py GET \
@@ -68,6 +90,8 @@ python scripts/twitter_oauth.py GET \
 URL-encode the query parameter. Supports operators like `from:username`, `#hashtag`, `"exact phrase"`, `-exclude`.
 
 ### Get mentions
+
+> ⚠️ **Requires Basic tier or higher — not available on free tier** (returns 403)
 
 ```bash
 python scripts/twitter_oauth.py GET \
@@ -110,6 +134,8 @@ python scripts/twitter_oauth.py POST \
 
 ### Look up a user by username
 
+> ⚠️ **Requires Basic tier or higher — not available on free tier** (returns 403)
+
 ```bash
 python scripts/twitter_oauth.py GET \
   "https://api.x.com/2/users/by/username/{username}?user.fields=public_metrics,description,created_at"
@@ -117,15 +143,26 @@ python scripts/twitter_oauth.py GET \
 
 ## Rate limits
 
-Twitter API v2 enforces per-endpoint rate limits that vary by access tier (free, basic, pro). Key limits at the **free tier** (most restrictive):
+Twitter API v2 enforces per-endpoint rate limits that vary by access tier (free, basic, pro).
+
+### Free tier limits (current)
+
+| Endpoint | Limit | Window | Notes |
+|---|---|---|---|
+| POST /2/tweets | 17 | 24 hours | Only write endpoint available |
+| GET /2/users/me | 75 | 15 minutes | Only read endpoint available |
+
+### Basic tier limits ($200/mo)
 
 | Endpoint | Limit | Window |
 |---|---|---|
-| POST /2/tweets | 17 | 24 hours |
+| POST /2/tweets | 100 | 24 hours |
 | GET /2/tweets/search/recent | 60 | 15 minutes |
 | GET /2/users/:id/tweets | 100 | 24 hours |
 | GET /2/users/:id/mentions | 100 | 24 hours |
 | GET /2/users/me | 75 | 15 minutes |
+
+> **Note:** On free tier, all read endpoints except `/2/users/me` return **HTTP 403** — do not attempt them.
 
 If the script returns a response with `"status": 429`, stop immediately. Do not retry in a loop — check the `x-rate-limit-reset` header in the response (Unix timestamp) and report to the caller when they can resume. Budget your reads to stay well under limits, especially for the 24-hour windows.
 
@@ -147,6 +184,6 @@ The helper script returns the full error response as JSON on failure. Common err
 | Status | Meaning | Action |
 |---|---|---|
 | 401 | Invalid or expired credentials | Check env vars are set correctly |
-| 403 | Not authorized for this endpoint | Check app permissions in developer portal |
+| 403 | Not authorized for this endpoint | On free tier, do not retry — read endpoints (except /2/users/me) require Basic tier ($200/mo). On paid tier, check app permissions in developer portal |
 | 429 | Rate limited | Stop and wait until `x-rate-limit-reset` |
 | 400 | Bad request (malformed JSON, invalid params) | Fix the request payload |
