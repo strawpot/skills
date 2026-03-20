@@ -166,6 +166,8 @@ Twitter API v2 enforces per-endpoint rate limits that vary by access tier (free,
 
 If the script returns a response with `"status": 429`, stop immediately. Do not retry in a loop — check the `x-rate-limit-reset` header in the response (Unix timestamp) and report to the caller when they can resume. Budget your reads to stay well under limits, especially for the 24-hour windows.
 
+> **Note:** The helper script does not surface rate-limit headers on successful responses — only on 429 errors. Budget requests conservatively since you cannot check remaining quota after each call.
+
 ## Pagination
 
 List endpoints include `meta.next_token` when more results exist. Append it to the next request:

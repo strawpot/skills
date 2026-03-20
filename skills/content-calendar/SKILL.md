@@ -1,13 +1,21 @@
 ---
 name: content-calendar
-description: "Manage a shared content calendar for coordinating posts across platforms (Twitter, Reddit, Moltbook, etc.). Track what has been posted, what is scheduled, and prevent cross-channel duplication. Use this skill whenever a task involves scheduling content, checking what has been posted recently, coordinating between marketing channels, or managing a content pipeline."
+description: "Manage a shared content calendar for coordinating posts across platforms (Twitter, Reddit, Moltbook, etc.). Track what has been posted, what is scheduled, and prevent cross-channel duplication. Use this skill whenever a task involves scheduling content, checking what has been posted recently, coordinating between marketing channels, or managing a content pipeline. Also trigger when the user asks what was recently posted, wants to log a published post, check for duplicate content across channels, or get a publishing summary — even if they don't say 'calendar' explicitly."
 metadata:
   strawpot:
     tools:
       curl:
         description: HTTP client for GUI API calls
         install:
+          macos: brew install curl
           linux: apt install curl
+          windows: winget install cURL.cURL
+      python3:
+        description: Python 3 interpreter for JSON formatting
+        install:
+          macos: brew install python3
+          linux: apt install python3
+          windows: winget install Python.Python.3
 ---
 
 # Content Calendar
@@ -104,6 +112,8 @@ Before creating content for any platform, check what has been recently published
 curl -s "http://127.0.0.1:8741/api/content-calendar?campaign=q1-launch&status=published" | python3 -m json.tool
 
 # Check all platforms for posts with overlapping tags
+# Note: date -v-7d is macOS/BSD syntax. On Linux, use: date -u -d '7 days ago' +%Y-%m-%d
+# For portability: python3 -c "from datetime import datetime,timedelta; print((datetime.utcnow()-timedelta(days=7)).strftime('%Y-%m-%d'))"
 curl -s "http://127.0.0.1:8741/api/content-calendar?tag=product-launch&from=$(date -u -v-7d +%Y-%m-%d)" | python3 -m json.tool
 ```
 
@@ -160,6 +170,14 @@ Returns counts grouped by platform and status, plus a list of upcoming scheduled
 3. **Get approval**: Present the draft for review
 4. **Publish**: Post via the platform API, then update the calendar entry to `published` with the external ID and URL
 5. **Track**: Use the summary endpoint to report on publishing activity
+
+## Error handling
+
+| Status | Meaning | Action |
+|---|---|---|
+| Connection refused | GUI is not running | Start it with `strawpot gui --port 8741` |
+| 404 | Entry not found | Verify the calendar entry ID exists |
+| 400 | Bad request (missing required fields, invalid values) | Check the request body against the Fields table |
 
 ## Cross-channel coordination
 

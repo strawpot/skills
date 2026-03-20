@@ -1,15 +1,17 @@
 ---
 name: brand-voice
-description: "Brand voice guidelines and tone consistency for all public-facing content. Provides rules for evaluating and adjusting content tone, style, and messaging. Use this skill whenever creating, reviewing, or editing marketing content, social media posts, documentation, or any public communications to ensure brand consistency."
+description: "Brand voice guidelines and tone consistency for all public-facing content. Provides rules for evaluating and adjusting content tone, style, and messaging. Use this skill whenever creating, reviewing, or editing marketing content, social media posts, documentation, or any public communications to ensure brand consistency. Also trigger when the user asks to check tone, evaluate if content sounds on-brand, adjust formality or personality in writing, or asks 'does this sound right?' about any public-facing text."
 ---
 
 # Brand Voice
 
-Guidelines and tools for maintaining consistent brand voice across all content and channels. This skill helps marketers, writers, and content creators produce on-brand content and evaluate drafts for tone consistency.
+Guidelines and tools for maintaining consistent brand voice across all content and channels. This skill helps marketers, writers, and content creators produce on-brand content and evaluate drafts for tone consistency. Pairs with the `content-calendar` skill for cross-channel consistency — log all content there to track voice consistency across platforms.
 
 ## Workspace configuration
 
 The primary source of brand voice rules is the **`brand-voice.md`** file in the workspace root. Always read this file before creating or reviewing any content. If it does not exist, ask the user to provide brand voice direction before proceeding.
+
+In automated contexts where no user is available (e.g., scheduled tasks), use the guardrails and general guidance in this skill as the fallback voice until `brand-voice.md` is created.
 
 A well-structured `brand-voice.md` should contain:
 
@@ -55,6 +57,8 @@ General guidance:
 | Social media | See the dedicated marketer role for each platform. |
 
 ### 5. Guardrails
+
+These guardrails protect the brand from reputational and legal risk:
 
 Content must never:
 - Make claims that cannot be backed up
