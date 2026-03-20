@@ -42,6 +42,17 @@ bottleneck shifts from headcount to imagination.
 5. **Community is the moat.** StrawHub is an open ecosystem. The best
    roles and skills will come from the community, not from us alone.
 
+## Why Human-in-the-Loop
+
+StrawPot chose human-in-the-loop by design, not as a stopgap.
+Fully autonomous agents fail silently: they compound errors across
+tasks with no one watching, and by the time you notice, the damage
+is done. Human oversight catches the edge cases that no guardrail
+anticipates. Trust in AI is earned incrementally, not declared, and
+users who see every decision point trust the system enough to give
+it more responsibility over time. This also positions StrawPot for
+enterprise adoption, where human oversight is non-negotiable.
+
 ## Who We Serve
 
 **Solo engineers and tiny teams** who punch above their weight. People
