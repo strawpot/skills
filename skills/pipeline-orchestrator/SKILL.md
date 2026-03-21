@@ -342,9 +342,11 @@ Time: 2026-03-20T14:00:00Z
 • pipeline/blocked (needs intervention): 1
   - strawpot/strawhub#8 — "Error: ..." (idle 5 days)
 
-🚫 Blocked
-• No new blocked issues
+🚫 Newly Blocked (this run)
+• No issues moved to pipeline/blocked this run
 ```
+
+The **Idle Issues** section is a snapshot of all issues currently waiting for human action — it includes `pipeline/blocked` issues regardless of when they were blocked. The **Newly Blocked** section tracks only state transitions that happened during this run (issues that moved to `pipeline/blocked` due to a failure in this invocation). An issue can appear in both sections if it was blocked during this run and is now idle.
 
 If nothing was processed in a loop, report "No issues in this state" rather than omitting the section.
 
@@ -352,22 +354,22 @@ For idle issues, calculate how long each issue has been in its current state by 
 
 ### Sending to Telegram
 
-After assembling the report text, send it via the `notify-telegram` skill. Write the report to a temp file to avoid shell quoting issues with special characters:
+After assembling the report text, send it via the `notify-telegram` skill dependency. Write the report to a temp file to avoid shell quoting issues with special characters:
 
 ```bash
-# Write report to a temp file
+# Write report to a temp file (avoids shell quoting and ARG_MAX issues)
 echo "$report" > /tmp/pipeline-report.txt
 
-# Send using the notify-telegram skill's send script
-python scripts/send.py "$(cat /tmp/pipeline-report.txt)"
+# Send using the notify-telegram skill's send script via stdin
+cat /tmp/pipeline-report.txt | python3 "$SKILL_DIR/../notify-telegram/scripts/send.py" -
 ```
 
-The script (from the `notify-telegram` skill at `scripts/send.py`) automatically chunks messages longer than 4096 characters. It requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_DEFAULT_CHAT_ID` environment variables — both must be set for pipeline notifications to work, even though `notify-telegram` marks `TELEGRAM_DEFAULT_CHAT_ID` as optional.
+The send script (provided by the `notify-telegram` dependency) automatically chunks messages longer than 4096 characters. Pass `-` as the argument to read from stdin — this avoids shell argument length limits (`ARG_MAX`) for large reports. The required environment variables (`TELEGRAM_BOT_TOKEN` and `TELEGRAM_DEFAULT_CHAT_ID`) are declared and managed by the `notify-telegram` skill — see its frontmatter for details. This skill does not redeclare them.
 
 If Telegram sending fails, log the error but do NOT fail the pipeline run. Check the exit code and capture stderr:
 
 ```bash
-if ! python scripts/send.py "$(cat /tmp/pipeline-report.txt)" 2>/tmp/telegram-err.txt; then
+if ! cat /tmp/pipeline-report.txt | python3 "$SKILL_DIR/../notify-telegram/scripts/send.py" - 2>/tmp/telegram-err.txt; then
   echo "⚠️ Telegram notification failed: $(cat /tmp/telegram-err.txt)"
 fi
 ```
