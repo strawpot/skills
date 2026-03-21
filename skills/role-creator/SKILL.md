@@ -120,8 +120,13 @@ metadata:
 **Optional fields:**
 
 - **metadata.strawpot.dependencies.skills**: Skills this role depends on. These get staged into the agent's workspace and their instructions are appended to the system prompt. Only include skills the agent actually needs for its work.
-- **metadata.strawpot.dependencies.roles**: Roles this role can delegate to. Use `"*"` to depend on all available roles (useful for top-level orchestrators like ai-ceo). For focused orchestrators, list specific roles.
+- **metadata.strawpot.dependencies.roles**: Roles this role can delegate to. **Prefer listing roles explicitly by name** (e.g., `code-reviewer`, `qa-engineer`) — this helps StrawHub resolve and download the required packages. The `"*"` wildcard means "all available roles" and should be reserved for top-level orchestrators (like `ai-ceo`) that genuinely need to route to any role in the team. Most roles — even orchestrators — should list their delegation targets explicitly.
 - **metadata.strawpot.default_agent**: The agent runtime to use. Defaults to `strawpot-claude-code` if not specified. Override when a role specifically needs a different runtime.
+
+**Fields you should NOT include:**
+
+- **version**: Do not add a `version` field to frontmatter. StrawHub tracks versions automatically via `strawhub publish --version`. Including it in the file creates drift between the file and the registry — the file says one version, StrawHub says another, and nobody knows which is correct.
+- **displayName**: Do not add a `displayName` field. StrawHub auto-generates display names from the `name` slug. Same drift problem as version.
 
 #### Writing Good Descriptions
 
@@ -263,7 +268,35 @@ Some roles are **hybrid** — they do some work themselves and delegate specific
 - **Skills are for instructions**: If the agent needs to follow a specific workflow (git branching, PR creation, code review checklist), that's a skill dependency.
 - **Roles are for delegation**: If the agent needs to hand off work to another specialist, that's a role dependency.
 - **Don't over-depend**: Only declare dependencies the role actually uses. Each skill dependency gets appended to the system prompt — extra ones bloat the context and can confuse the agent.
+- **Prefer explicit role dependencies over `*`**: Even if a role uses `*` for convenience, list the specific roles it delegates to. Explicit deps let StrawHub resolve and download the right packages, and they make the role's delegation surface obvious to anyone reading the file. Reserve `*` for top-level orchestrators that genuinely route to the entire team.
 - **Check for transitivity**: If role A depends on role B, and B depends on skill X, role A doesn't need to also depend on skill X (it's resolved transitively).
+
+#### Evaluator-in-the-Loop for Output-Producing Roles
+
+Any role that produces output — code, documents, content, marketing copy, anything — must include a mandatory evaluation loop. The pattern:
+
+1. **Depend on the evaluator role directly.** Add it to `metadata.strawpot.dependencies.roles`:
+
+```yaml
+roles:
+  - code-reviewer      # evaluator for this role's output
+```
+
+Examples: `implementer` depends on `code-reviewer`, `docs-writer` depends on `docs-evaluator`, `strawpot-moltbook-marketer` depends on `strawpot-moltbook-evaluator`.
+
+2. **Instruct the agent to delegate to the evaluator after producing output.** This goes in the role body, typically as the last step of "How you work":
+
+```markdown
+After writing, delegate to the `docs-evaluator` role for independent evaluation.
+Include: the complete document, the original task, and names of related docs.
+Incorporate feedback and repeat until the evaluator responds with `NO_FURTHER_IMPROVEMENTS`.
+```
+
+3. **The loop is mandatory for ALL output, not conditional.** Don't write "For non-trivial content, delegate to the evaluator" — that gives the agent an escape hatch it will use too liberally. All output gets evaluated. The evaluator decides if it's trivial enough to pass immediately, not the producer.
+
+4. **The termination signal is `NO_FURTHER_IMPROVEMENTS`.** The evaluation loop repeats until the evaluator responds with exactly this. Don't invent alternative signals — consistency across the team matters for observability and debugging.
+
+This pattern ensures every deliverable gets a second pair of eyes before it's considered done. It catches quality issues early and prevents the common failure mode where a role produces "good enough" work that accumulates small problems over time.
 
 #### Anti-patterns to Avoid
 
@@ -441,73 +474,7 @@ Some environments (single-agent runtimes, web-based interfaces, headless servers
 
 ## Quick Reference
 
-### Worker Role Template
-
-```yaml
----
-name: my-worker
-description: "Does X by following Y workflow. Use for tasks involving A, B, and C."
-metadata:
-  strawpot:
-    dependencies:
-      skills:
-        - relevant-skill
-    default_agent: strawpot-claude-code
----
-
-# My Worker
-
-You are a [identity]. You [primary job].
-
-## How you work
-### 1. [Step] — [what and why]
-### 2. [Step] — [what and why]
-### 3. Deliver — [deliverable format]
-
-## Principles
-- **[Principle].** [Why it matters.]
-
-## What you do NOT do
-- You don't [X] — that's `other-role`
-```
-
-### Orchestrator Role Template
-
-```yaml
----
-name: my-orchestrator
-description: "Orchestrates X by delegating to specialized roles. Use as the entry point for any Y task."
-metadata:
-  strawpot:
-    dependencies:
-      roles:
-        - worker-a
-        - worker-b
-    default_agent: strawpot-claude-code
----
-
-# My Orchestrator
-
-You are a routing layer for [domain]. You do not do the work yourself.
-
-## First step: discover your team
-Read every ROLE.md in your `roles/` directory.
-
-## Delegating tasks
-Use the denden skill for all delegation. Provide a clear task
-description, expected deliverable, and relevant context.
-
-## Routing
-- [Task type A] → `worker-a`
-- [Task type B] → `worker-b`
-- [Unclear] → ask the user
-
-## After delegation
-Review the result. Summarize for the user.
-
-## What you are not
-You are not a [worker type]. Always delegate.
-```
+See `references/templates.md` for worker and orchestrator role templates with annotated frontmatter examples.
 
 ---
 
@@ -525,4 +492,7 @@ Use this to make sure you haven't missed anything:
 - [ ] If feasible, ran at least 1-2 tasks via `strawpot run --role` to catch prompt-level issues
 - [ ] Role body is 60-140 lines — lean, not bloated
 - [ ] Style matches existing roles in the user's team
+- [ ] Frontmatter does NOT include `version` or `displayName` fields
+- [ ] If the role produces output, it depends on an evaluator role and includes a mandatory evaluation loop ending with `NO_FURTHER_IMPROVEMENTS`
+- [ ] Role dependencies are listed explicitly by name (not just `*`) unless it's a top-level orchestrator
 - [ ] After deploying, observe real delegation behavior and iterate — the smoke-test catches design issues, but runtime reveals the rest

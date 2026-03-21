@@ -133,6 +133,11 @@ Markdown body with instructions...
 - **metadata.strawpot.tools**: System tools the skill needs. Tool names should match the CLI binary (used for `PATH` detection). During install, missing tools are auto-installed using the OS-specific command. Supported OS keys: `macos`, `linux`, `windows`.
 - **metadata.strawpot.env**: Environment variables. At session start, the CLI checks if each required variable is set and prompts the user for missing ones. Resolution order: `os.environ` > saved config in `strawpot.toml` > interactive prompt.
 
+**Fields managed by StrawHub (do not include):**
+
+- `version` — tracked automatically by StrawHub when you publish with `--version`. Including it in SKILL.md creates drift between the file and the registry.
+- `displayName` — auto-generated from the `name` field. Including it manually will be ignored.
+
 ### Skill Writing Guide
 
 #### Anatomy of a Skill
