@@ -120,7 +120,7 @@ metadata:
 **Optional fields:**
 
 - **metadata.strawpot.dependencies.skills**: Skills this role depends on. These get staged into the agent's workspace and their instructions are appended to the system prompt. Only include skills the agent actually needs for its work.
-- **metadata.strawpot.dependencies.roles**: Roles this role can delegate to. **Prefer listing roles explicitly by name** (e.g., `code-reviewer`, `qa-engineer`) — this helps StrawHub resolve and download the required packages. The `"*"` wildcard means "all available roles" and should be reserved for top-level orchestrators (like `ai-ceo`) that genuinely need to route to any role in the team. Most roles — even orchestrators — should list their delegation targets explicitly.
+- **metadata.strawpot.dependencies.roles**: Roles this role **directly** delegates to. Only list roles that this role itself sends tasks to — not roles that downstream dependencies delegate to (those are transitive and each role declares its own). This keeps ownership clear and prevents dependency bloat. **List roles explicitly by name** (e.g., `code-reviewer`, `qa-engineer`) — this helps StrawHub resolve and download the required packages. The `"*"` wildcard means "all available roles" and should be reserved for top-level orchestrators (like `ai-ceo`) that genuinely need to route to any role in the team.
 - **metadata.strawpot.default_agent**: The agent runtime to use. Defaults to `strawpot-claude-code` if not specified. Override when a role specifically needs a different runtime.
 
 **Fields you should NOT include:**
@@ -268,8 +268,8 @@ Some roles are **hybrid** — they do some work themselves and delegate specific
 - **Skills are for instructions**: If the agent needs to follow a specific workflow (git branching, PR creation, code review checklist), that's a skill dependency.
 - **Roles are for delegation**: If the agent needs to hand off work to another specialist, that's a role dependency.
 - **Don't over-depend**: Only declare dependencies the role actually uses. Each skill dependency gets appended to the system prompt — extra ones bloat the context and can confuse the agent.
-- **Prefer explicit role dependencies over `*`**: Even if a role uses `*` for convenience, list the specific roles it delegates to. Explicit deps let StrawHub resolve and download the right packages, and they make the role's delegation surface obvious to anyone reading the file. Reserve `*` for top-level orchestrators that genuinely route to the entire team.
-- **Check for transitivity**: If role A depends on role B, and B depends on skill X, role A doesn't need to also depend on skill X (it's resolved transitively).
+- **Direct dependencies only**: List only roles/skills that this role directly delegates to or directly uses. Do not include transitive dependencies — if role A delegates to role B, and B delegates to role C, then A depends on B but not on C. Each role declares its own dependencies, so C appears in B's dependency list, not A's. This prevents dependency bloat, keeps ownership clear, and makes each role's actual delegation surface obvious.
+- **Prefer explicit role names over `*`**: List the specific roles it delegates to by name. Explicit deps let StrawHub resolve and download the right packages, and they make the delegation surface obvious to anyone reading the file. Reserve `*` for top-level orchestrators that genuinely route to the entire team.
 
 #### Evaluator-in-the-Loop for Output-Producing Roles
 
@@ -494,5 +494,5 @@ Use this to make sure you haven't missed anything:
 - [ ] Style matches existing roles in the user's team
 - [ ] Frontmatter does NOT include `version` or `displayName` fields
 - [ ] If the role produces output, it depends on an evaluator role and includes a mandatory evaluation loop ending with `NO_FURTHER_IMPROVEMENTS`
-- [ ] Role dependencies are listed explicitly by name (not just `*`) unless it's a top-level orchestrator
+- [ ] Role dependencies list only direct delegation targets (no transitive deps) and use explicit names (not `*`) unless it's a top-level orchestrator
 - [ ] After deploying, observe real delegation behavior and iterate — the smoke-test catches design issues, but runtime reveals the rest
