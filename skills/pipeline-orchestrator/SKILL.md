@@ -348,20 +348,31 @@ Time: 2026-03-20T14:00:00Z
 
 If nothing was processed in a loop, report "No issues in this state" rather than omitting the section.
 
-For idle issues, calculate how long each issue has been in its current state by checking when the pipeline/* label was last added (use issue timeline or events API if available, otherwise use issue updated_at as an approximation).
+For idle issues, calculate how long each issue has been in its current state by checking when the pipeline/* label was last added (use issue timeline or events API if available, otherwise use issue `updated_at` as an approximation and append "(approx)" to the duration).
 
 ### Sending to Telegram
 
-After assembling the report text, send it via the notify-telegram skill:
+After assembling the report text, send it via the `notify-telegram` skill. Write the report to a temp file to avoid shell quoting issues with special characters:
 
 ```bash
-# Use the notify-telegram send script
-python3 "$SKILL_DIR/../notify-telegram/scripts/send.py" "$report"
+# Write report to a temp file
+echo "$report" > /tmp/pipeline-report.txt
+
+# Send using the notify-telegram skill's send script
+python scripts/send.py "$(cat /tmp/pipeline-report.txt)"
 ```
 
-The script automatically chunks messages longer than 4096 characters. It requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_DEFAULT_CHAT_ID` environment variables.
+The script (from the `notify-telegram` skill at `scripts/send.py`) automatically chunks messages longer than 4096 characters. It requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_DEFAULT_CHAT_ID` environment variables — both must be set for pipeline notifications to work, even though `notify-telegram` marks `TELEGRAM_DEFAULT_CHAT_ID` as optional.
 
-If Telegram sending fails (missing env vars, network error), log the error but do NOT fail the pipeline run — the report is still printed to stdout as the primary output. Telegram is a notification layer, not a critical path.
+If Telegram sending fails, log the error but do NOT fail the pipeline run. Check the exit code and capture stderr:
+
+```bash
+if ! python scripts/send.py "$(cat /tmp/pipeline-report.txt)" 2>/tmp/telegram-err.txt; then
+  echo "⚠️ Telegram notification failed: $(cat /tmp/telegram-err.txt)"
+fi
+```
+
+The report is always printed to stdout as the primary output. Telegram is a notification layer, not a critical path.
 
 ---
 
