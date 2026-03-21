@@ -8,6 +8,7 @@ metadata:
       - github-prs
       - git-workflow
       - denden
+      - notify-telegram
     tools:
       gh:
         description: GitHub CLI (authenticated with org access)
@@ -298,39 +299,69 @@ Manually review, fix the blocker, then remove \`pipeline/blocked\` and add \`pip
 
 ## Output
 
-After each run, produce a summary report listing what was processed:
+After each run, produce a summary report and send it to Telegram.
+
+### Building the report
+
+Assemble the report as a text string following this template:
 
 ```
-## Pipeline Run Summary
+📊 Pipeline Run Summary
 
-**Mode:** all | triage | plan | execute
-**Org:** strawpot
-**Time:** 2026-03-20T14:00:00Z
+Mode: all | triage | plan | execute
+Org: strawpot
+Time: 2026-03-20T14:00:00Z
 
-### Triage (Loop 1)
-- Processed: 3 new issues
-  - strawpot/denden#42 — "Add retry logic to gRPC calls" → pipeline/triage
+🔄 Triage (Loop 1)
+• Processed: 3 new issues
+  - strawpot/denden#42 — "Add retry logic" → pipeline/triage
   - strawpot/skills#18 — "Skill X not triggering" → pipeline/triage
-  - strawpot/strawhub#7 — "Search broken on mobile" → pipeline/triage
-- Errors: 0
+  - strawpot/strawhub#7 — "Search broken" → pipeline/triage
+• Errors: 0
 
-### Planning (Loop 2)
-- Processed: 1 approved issue
-  - strawpot/denden#38 — "Implement batch delegation" → pipeline/planned (4 sub-issues)
-- Errors: 0
+📋 Planning (Loop 2)
+• Processed: 1 approved issue
+  - strawpot/denden#38 → pipeline/planned (4 sub-issues)
+• Errors: 0
 
-### Execution (Loop 3)
-- Processed: 2 sub-issues
-  - strawpot/denden#39 — PR #45 created → pipeline/review
-  - strawpot/denden#40 — PR #46 created → pipeline/review
-- Parents completed: 0 (2 sub-issues remaining)
-- Errors: 0
+⚡ Execution (Loop 3)
+• Processed: 2 sub-issues
+  - strawpot/denden#39 — PR #45 → pipeline/review
+  - strawpot/denden#40 — PR #46 → pipeline/review
+• Parents completed: 0 (2 remaining)
+• Errors: 0
 
-### Blocked
-- No new blocked issues
+⏳ Idle Issues (awaiting human action)
+• pipeline/triage (needs approval): 5
+  - strawpot/strawpot#396 — "Feature X" (idle 3 days)
+  - strawpot/denden#42 — "Add retry logic" (idle 1 day)
+  ...
+• pipeline/review (needs merge): 2
+  - strawpot/skills#19 — PR #12 (idle 2 days)
+  ...
+• pipeline/blocked (needs intervention): 1
+  - strawpot/strawhub#8 — "Error: ..." (idle 5 days)
+
+🚫 Blocked
+• No new blocked issues
 ```
 
 If nothing was processed in a loop, report "No issues in this state" rather than omitting the section.
+
+For idle issues, calculate how long each issue has been in its current state by checking when the pipeline/* label was last added (use issue timeline or events API if available, otherwise use issue updated_at as an approximation).
+
+### Sending to Telegram
+
+After assembling the report text, send it via the notify-telegram skill:
+
+```bash
+# Use the notify-telegram send script
+python3 "$SKILL_DIR/../notify-telegram/scripts/send.py" "$report"
+```
+
+The script automatically chunks messages longer than 4096 characters. It requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_DEFAULT_CHAT_ID` environment variables.
+
+If Telegram sending fails (missing env vars, network error), log the error but do NOT fail the pipeline run — the report is still printed to stdout as the primary output. Telegram is a notification layer, not a critical path.
 
 ---
 
