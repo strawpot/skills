@@ -91,7 +91,7 @@ name: my-skill                            # Required: package slug (must match d
 description: "What it does and when..."   # Required: one-line summary + trigger contexts
 metadata:
   strawpot:
-    dependencies:                         # Optional: flat list of skill dependency slugs
+    dependencies:                         # Optional: list each dependency explicitly by name
       - other-skill
     tools:                                # Optional: system tool requirements
       gh:
@@ -129,7 +129,7 @@ Markdown body with instructions...
 
 **Optional fields:**
 
-- **metadata.strawpot.dependencies**: Flat list of skill slugs this skill depends on. Dependencies are resolved recursively with cycle detection.
+- **metadata.strawpot.dependencies**: Flat list of skill slugs this skill depends on. Dependencies are resolved recursively with cycle detection. **List dependencies explicitly by name** — this helps StrawHub resolve and download the required packages. Avoid the `"*"` wildcard; it should be reserved for top-level orchestrators that genuinely need access to everything. If a skill uses specific dependencies, name them.
 - **metadata.strawpot.tools**: System tools the skill needs. Tool names should match the CLI binary (used for `PATH` detection). During install, missing tools are auto-installed using the OS-specific command. Supported OS keys: `macos`, `linux`, `windows`.
 - **metadata.strawpot.env**: Environment variables. At session start, the CLI checks if each required variable is set and prompts the user for missing ones. Resolution order: `os.environ` > saved config in `strawpot.toml` > interactive prompt.
 
