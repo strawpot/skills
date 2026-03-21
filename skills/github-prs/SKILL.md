@@ -9,6 +9,7 @@ metadata:
         install:
           macos: brew install gh
           linux: sudo apt install gh
+          windows: winget install GitHub.cli
     env:
       GITHUB_TOKEN:
         description: GitHub personal access token (or use `gh auth login`)
@@ -50,6 +51,10 @@ gh pr diff 123 --repo owner/repo
 
 ## Create a PR
 
+**Closing keywords:** When the PR is linked to a known issue, always include a GitHub closing keyword in the PR body so the issue is automatically closed on merge. Supported keywords: `Closes`, `Fixes`, `Resolves` (case-insensitive). Place them in the Summary section, one per line for multiple issues.
+
+Examples: `Closes #42`, `Fixes #42`, `Resolves owner/repo#42`
+
 ```bash
 # From current branch (interactive)
 gh pr create --repo owner/repo
@@ -68,6 +73,16 @@ gh pr create --repo owner/repo \
 - [ ] Manual test on staging" \
   --base main \
   --label "enhancement"
+
+# Multiple related issues
+gh pr create --repo owner/repo \
+  --title "Fix auth and session bugs" \
+  --body "## Summary
+- Fixes token refresh race condition
+- Fixes session expiry not clearing cookies
+
+Fixes #42
+Fixes #57"
 
 # Draft PR
 gh pr create --repo owner/repo --title "WIP: new feature" --draft
