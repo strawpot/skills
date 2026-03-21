@@ -97,6 +97,10 @@ If no issues:
 No issues found. Checked for bugs and CLAUDE.md compliance.
 ```
 
+### Agent return signal
+
+After posting the PR comment, if no issues met the confidence threshold, output the literal string `NO_FURTHER_IMPROVEMENTS` as the final line of your return output (stdout / task result). Do NOT include this string in the `gh pr comment` body — it is a machine-readable signal for evaluator-in-the-loop workflows, not a human-facing message. This aligns with the convention used by other evaluator roles (docs-evaluator, skill-evaluator, etc.).
+
 When linking to code, use the full git SHA — commands like `$(git rev-parse HEAD)` will not work since the comment is rendered as Markdown. Format: `https://github.com/owner/repo/blob/<full-sha>/path/to/file#L<start>-L<end>`. Provide at least 1 line of context before and after the issue.
 
 ## False positive guidance
