@@ -7,7 +7,7 @@ metadata:
       vhs:
         description: Terminal session recorder (charmbracelet/vhs)
         install:
-          macos: brew install charmbracelet/tap/vhs
+          macos: brew tap charmbracelet/tap && brew install vhs
           linux: go install github.com/charmbracelet/vhs@latest
       ffmpeg:
         description: Video processing and stitching
@@ -384,7 +384,7 @@ rm -rf .demo-video-work  # only after user confirms
 
 ## Troubleshooting
 
-**VHS not found**: Install via `brew install charmbracelet/tap/vhs` (macOS) or `go install github.com/charmbracelet/vhs@latest` (Linux). Requires `ttyd` and `ffmpeg` as VHS dependencies.
+**VHS not found**: Install via `brew tap charmbracelet/tap && brew install vhs` (macOS) or `go install github.com/charmbracelet/vhs@latest` (Linux). Requires `ttyd` and `ffmpeg` as VHS dependencies.
 
 **Playwright browser not installed**: Run `npx playwright install chromium` to download the browser binary. For CI environments, use `npx playwright install --with-deps chromium`.
 
