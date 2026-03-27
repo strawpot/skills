@@ -4,6 +4,8 @@
 Usage:
   python worktree.py create --name my-feature [--base main] [--issue 42]
   python worktree.py list
+  python worktree.py merge --name my-feature
+  python worktree.py discard --name my-feature [--keep-remote]
 
 Output: JSON to stdout. Exit code 1 on error.
 """
@@ -20,18 +22,30 @@ from typing import NoReturn
 
 MANIFEST_REL = ".strawpot/worktrees.json"
 WORKTREES_DIR_REL = ".strawpot/worktrees"
+PATCHES_DIR_REL = ".strawpot/patches"
 
 
-def _git(*args: str) -> subprocess.CompletedProcess[str]:
+def _git(
+    *args: str,
+    cwd: str | Path | None = None,
+    input_data: str | None = None,
+) -> subprocess.CompletedProcess[str]:
     """Run a git command and return the result."""
     try:
         return subprocess.run(
             ["git", *args],
             capture_output=True,
             text=True,
+            cwd=cwd,
+            input=input_data,
         )
     except FileNotFoundError:
         _error("git is not installed or not on PATH")
+
+
+def _run(*args: str) -> subprocess.CompletedProcess[str]:
+    """Run a command and return the result."""
+    return subprocess.run(args, capture_output=True, text=True, timeout=15)
 
 
 def _find_repo_root() -> Path:
@@ -104,6 +118,51 @@ def _get_git_worktree_paths() -> set[str]:
     return paths
 
 
+def _get_manifest_entry(manifest: dict, name: str) -> dict:
+    """Get a worktree entry from the manifest, or error if not found."""
+    if name not in manifest["worktrees"]:
+        _error(f"Worktree '{name}' not found in manifest")
+    return manifest["worktrees"][name]
+
+
+def _detect_pr(branch: str) -> dict | None:
+    """Check if a PR exists for the given branch. Returns PR info or None."""
+    try:
+        result = _run("gh", "pr", "list", "--head", branch, "--state", "all", "--json", "url,state", "--limit", "1")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    try:
+        prs = json.loads(result.stdout)
+        return prs[0] if prs else None
+    except (json.JSONDecodeError, IndexError):
+        return None
+
+
+def _remove_worktree(repo_root: Path, entry: dict) -> bool:
+    """Remove a git worktree, tolerating already-removed state. Returns True if removed."""
+    worktree_path = repo_root / entry["path"]
+    if worktree_path.exists():
+        result = _git("worktree", "remove", str(worktree_path), "--force")
+        if result.returncode != 0:
+            return False
+    _git("worktree", "prune")
+    return True
+
+
+def _delete_local_branch(branch: str) -> bool:
+    """Delete a local branch. Returns True if deleted."""
+    result = _git("branch", "-D", branch)
+    return result.returncode == 0
+
+
+def _delete_remote_branch(branch: str) -> bool:
+    """Delete a remote branch. Returns True if deleted."""
+    result = _git("push", "origin", "--delete", branch)
+    return result.returncode == 0
+
+
 def create(name: str, base: str | None = None, issue: int | None = None) -> None:
     """Create a new worktree with a dedicated branch."""
     repo_root = _find_repo_root()
@@ -164,6 +223,108 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
     })
 
 
+def merge(name: str) -> None:
+    """Merge worktree changes back to the base branch and clean up."""
+    repo_root = _find_repo_root()
+    manifest = _load_manifest(repo_root)
+    entry = _get_manifest_entry(manifest, name)
+    branch = entry["branch"]
+    base_branch = entry.get("base_branch", "main")
+
+    # Check for PR
+    pr = _detect_pr(branch)
+
+    if pr and pr.get("state") == "MERGED":
+        entry["status"] = "done"
+        _save_manifest(repo_root, manifest)
+        _remove_worktree(repo_root, entry)
+        _delete_local_branch(branch)
+        _output({
+            "status": "done",
+            "name": name,
+            "message": "PR merged — worktree and branch cleaned up",
+            "pr_url": pr.get("url"),
+        })
+        return
+
+    if pr and pr.get("state") == "OPEN":
+        entry["status"] = "merged-via-pr"
+        _save_manifest(repo_root, manifest)
+        _remove_worktree(repo_root, entry)
+        _output({
+            "status": "merged-via-pr",
+            "name": name,
+            "message": "PR is open — worktree removed, branch preserved for PR",
+            "pr_url": pr.get("url"),
+            "branch": branch,
+        })
+        return
+
+    # No PR — apply diff to base as unstaged changes
+    diff_result = _git("diff", f"{base_branch}..{branch}")
+    if diff_result.returncode != 0:
+        _error(f"Failed to generate diff: {diff_result.stderr.strip()}")
+
+    patch = diff_result.stdout
+    if patch.strip():
+        # Dry-run check for conflicts
+        check_result = _git("apply", "--check", input_data=patch)
+        if check_result.returncode != 0:
+            patches_dir = repo_root / PATCHES_DIR_REL
+            patches_dir.mkdir(parents=True, exist_ok=True)
+            patch_path = patches_dir / f"{name}.patch"
+            try:
+                patch_path.write_text(patch, encoding="utf-8")
+            except OSError as e:
+                _error(f"Merge conflict detected but failed to save patch: {e}")
+
+            entry["status"] = "conflict"
+            _save_manifest(repo_root, manifest)
+            _output({
+                "status": "conflict",
+                "name": name,
+                "message": "Merge conflict detected — patch saved for manual resolution",
+                "patch_path": str(patch_path.relative_to(repo_root)),
+                "conflict_details": check_result.stderr.strip(),
+            })
+            return
+
+        apply_result = _git("apply", input_data=patch)
+        if apply_result.returncode != 0:
+            _error(f"Failed to apply patch: {apply_result.stderr.strip()}")
+        message = "Changes applied as unstaged modifications"
+    else:
+        message = "No changes to merge — worktree cleaned up"
+
+    entry["status"] = "merged"
+    _save_manifest(repo_root, manifest)
+    _remove_worktree(repo_root, entry)
+    _delete_local_branch(branch)
+    _output({"status": "merged", "name": name, "message": message})
+
+
+def discard(name: str, keep_remote: bool = False) -> None:
+    """Discard worktree and branch without merging."""
+    repo_root = _find_repo_root()
+    manifest = _load_manifest(repo_root)
+    entry = _get_manifest_entry(manifest, name)
+    branch = entry["branch"]
+
+    entry["status"] = "discarded"
+    _save_manifest(repo_root, manifest)
+
+    _remove_worktree(repo_root, entry)
+    _delete_local_branch(branch)
+    remote_deleted = _delete_remote_branch(branch) if not keep_remote else False
+
+    _output({
+        "status": "discarded",
+        "name": name,
+        "message": "Worktree and branch removed",
+        "remote_deleted": remote_deleted,
+    })
+
+
 def list_worktrees() -> None:
     """List all tracked worktrees and their status."""
     repo_root = _find_repo_root()
@@ -207,12 +368,30 @@ def main() -> None:
         "--issue", type=int, default=None, help="Issue number to link"
     )
 
+    merge_parser = subparsers.add_parser("merge", help="Merge worktree changes back")
+    merge_parser.add_argument(
+        "--name", required=True, help="Worktree name to merge"
+    )
+
+    discard_parser = subparsers.add_parser("discard", help="Discard worktree without merging")
+    discard_parser.add_argument(
+        "--name", required=True, help="Worktree name to discard"
+    )
+    discard_parser.add_argument(
+        "--keep-remote", action="store_true", default=False,
+        help="Preserve remote branch"
+    )
+
     subparsers.add_parser("list", help="List all tracked worktrees")
 
     args = parser.parse_args()
 
     if args.command == "create":
         create(name=args.name, base=args.base, issue=args.issue)
+    elif args.command == "merge":
+        merge(name=args.name)
+    elif args.command == "discard":
+        discard(name=args.name, keep_remote=args.keep_remote)
     elif args.command == "list":
         list_worktrees()
 

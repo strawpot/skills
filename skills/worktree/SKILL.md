@@ -96,11 +96,91 @@ python scripts/worktree.py list
 }
 ```
 
+### `merge` — Merge worktree changes back
+
+Merges changes from the worktree branch back to the base directory
+and cleans up. Behavior depends on whether a PR exists for the branch.
+
+```bash
+python scripts/worktree.py merge --name my-feature
+```
+
+**Parameters:**
+
+| Flag | Required | Description |
+|------|----------|-------------|
+| `--name` | Yes | Worktree name to merge |
+
+**Merge behavior by PR state:**
+
+| PR state | What happens |
+|----------|-------------|
+| PR merged | Full cleanup — worktree and branch removed, status → `done` |
+| PR open | Worktree removed, branch preserved for PR, status → `merged-via-pr` |
+| No PR, clean merge | Diff applied as unstaged changes, worktree + branch removed, status → `merged` |
+| No PR, conflict | Patch saved to `.strawpot/patches/<name>.patch`, status → `conflict` |
+| No PR, no changes | Worktree + branch removed, status → `merged` |
+
+**Output (merged):**
+```json
+{
+  "status": "merged",
+  "name": "my-feature",
+  "message": "Changes applied as unstaged modifications"
+}
+```
+
+**Output (conflict):**
+```json
+{
+  "status": "conflict",
+  "name": "my-feature",
+  "message": "Merge conflict detected — patch saved for manual resolution",
+  "patch_path": ".strawpot/patches/my-feature.patch",
+  "conflict_details": "error: patch failed: src/main.py:10"
+}
+```
+
+### `discard` — Discard worktree without merging
+
+Removes the worktree and branch without applying any changes. Use when
+work is abandoned or superseded.
+
+```bash
+# Discard and delete remote branch
+python scripts/worktree.py discard --name my-feature
+
+# Discard but keep remote branch
+python scripts/worktree.py discard --name my-feature --keep-remote
+```
+
+**Parameters:**
+
+| Flag | Required | Default | Description |
+|------|----------|---------|-------------|
+| `--name` | Yes | — | Worktree name to discard |
+| `--keep-remote` | No | `false` | Preserve remote branch |
+
+**Output:**
+```json
+{
+  "status": "discarded",
+  "name": "my-feature",
+  "message": "Worktree and branch removed",
+  "remote_deleted": true
+}
+```
+
 **Status values:**
 
 | Status | Meaning |
 |--------|---------|
 | `active` | Worktree exists and is in use |
+| `merged` | Changes merged locally, worktree cleaned up |
+| `merged-via-pr` | PR-based merge, branch kept for open PR |
+| `done` | PR merged, full cleanup complete |
+| `conflict` | Merge attempted, patch saved to `.strawpot/patches/` |
+| `discarded` | Explicitly abandoned |
 | `stale` | In manifest but not in `git worktree list` output |
 
 ## Worktree layout
@@ -109,9 +189,11 @@ python scripts/worktree.py list
 project/
 ├── .strawpot/
 │   ├── worktrees.json          # Manifest tracking all worktrees
-│   └── worktrees/
-│       ├── my-feature/         # Worktree directory
-│       └── fix-auth/           # Another worktree
+│   ├── worktrees/
+│   │   ├── my-feature/         # Worktree directory
+│   │   └── fix-auth/           # Another worktree
+│   └── patches/
+│       └── my-feature.patch    # Saved on merge conflict
 ```
 
 ## When to use worktrees
