@@ -19,8 +19,8 @@ metadata:
 # Worktree Management
 
 Manage git worktrees for task-level code isolation. Worktrees let
-agents work in isolated copies of the repo without affecting the main
-working directory.
+agents work on separate branches simultaneously — each worktree shares
+the same `.git` directory but has its own working tree and index.
 
 All commands use the bundled script at `scripts/worktree.py` and
 output JSON for programmatic consumption.
@@ -65,7 +65,8 @@ python scripts/worktree.py create --name fix-auth --issue 42
   "name": "my-feature",
   "path": ".strawpot/worktrees/my-feature",
   "branch": "worktree/my-feature",
-  "base_branch": "main"
+  "base_branch": "main",
+  "issue": null
 }
 ```
 
@@ -88,7 +89,7 @@ python scripts/worktree.py list
       "branch": "worktree/my-feature",
       "base_branch": "main",
       "issue": 42,
-      "created_at": "2026-03-27T12:00:00Z",
+      "created_at": "2026-03-27T12:00:00+00:00",
       "status": "active"
     }
   ]
@@ -100,7 +101,7 @@ python scripts/worktree.py list
 | Status | Meaning |
 |--------|---------|
 | `active` | Worktree exists and is in use |
-| `stale` | In manifest but worktree directory is missing |
+| `stale` | In manifest but not in `git worktree list` output |
 
 ## Worktree layout
 

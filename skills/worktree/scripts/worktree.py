@@ -24,11 +24,14 @@ WORKTREES_DIR_REL = ".strawpot/worktrees"
 
 def _git(*args: str) -> subprocess.CompletedProcess[str]:
     """Run a git command and return the result."""
-    return subprocess.run(
-        ["git", *args],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        return subprocess.run(
+            ["git", *args],
+            capture_output=True,
+            text=True,
+        )
+    except FileNotFoundError:
+        _error("git is not installed or not on PATH")
 
 
 def _find_repo_root() -> Path:
@@ -58,18 +61,24 @@ def _load_manifest(repo_root: Path) -> dict:
         return {"worktrees": {}}
     try:
         with open(manifest_path) as f:
-            return json.load(f)
+            data = json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         _error(f"Failed to read manifest: {e}")
+    if not isinstance(data, dict) or "worktrees" not in data:
+        _error("Invalid manifest format: missing 'worktrees' key")
+    return data
 
 
 def _save_manifest(repo_root: Path, manifest: dict) -> None:
     """Save the worktrees manifest."""
     manifest_path = repo_root / MANIFEST_REL
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(manifest_path, "w") as f:
-        json.dump(manifest, f, indent=2)
-        f.write("\n")
+    try:
+        with open(manifest_path, "w") as f:
+            json.dump(manifest, f, indent=2)
+            f.write("\n")
+    except OSError as e:
+        _error(f"Failed to save manifest: {e}")
 
 
 def _get_current_branch() -> str:
@@ -77,14 +86,17 @@ def _get_current_branch() -> str:
     result = _git("rev-parse", "--abbrev-ref", "HEAD")
     if result.returncode != 0:
         _error("Failed to determine current branch")
-    return result.stdout.strip()
+    branch = result.stdout.strip()
+    if branch == "HEAD":
+        _error("Cannot create worktree from detached HEAD — use --base to specify a branch")
+    return branch
 
 
 def _get_git_worktree_paths() -> set[str]:
     """Get paths of all git worktrees."""
     result = _git("worktree", "list", "--porcelain")
     if result.returncode != 0:
-        return set()
+        _error(f"Failed to list git worktrees: {result.stderr.strip()}")
     paths = set()
     for line in result.stdout.splitlines():
         if line.startswith("worktree "):
@@ -97,7 +109,6 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
     repo_root = _find_repo_root()
     manifest = _load_manifest(repo_root)
 
-    # Check for duplicate name
     if name in manifest["worktrees"]:
         existing = manifest["worktrees"][name]
         _error(
@@ -105,31 +116,25 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
             f"(path: {existing['path']}, status: {existing['status']})"
         )
 
-    # Resolve base branch
     if base is None:
         base = _get_current_branch()
     else:
-        # Validate base branch exists
         result = _git("rev-parse", "--verify", base)
         if result.returncode != 0:
-            # Try with origin/ prefix
             result = _git("rev-parse", "--verify", f"origin/{base}")
             if result.returncode != 0:
                 _error(f"Base branch '{base}' does not exist")
+            base = f"origin/{base}"
 
-    # Paths
     worktree_path = repo_root / WORKTREES_DIR_REL / name
     branch_name = f"worktree/{name}"
 
-    # Ensure parent directory exists
     worktree_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Create the worktree with a new branch
     result = _git("worktree", "add", "-b", branch_name, str(worktree_path), base)
     if result.returncode != 0:
         _error(f"Failed to create worktree: {result.stderr.strip()}")
 
-    # Record in manifest
     rel_path = str(worktree_path.relative_to(repo_root))
     entry = {
         "path": rel_path,
@@ -140,7 +145,14 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
         "status": "active",
     }
     manifest["worktrees"][name] = entry
-    _save_manifest(repo_root, manifest)
+
+    try:
+        _save_manifest(repo_root, manifest)
+    except SystemExit:
+        # Manifest save failed — rollback the worktree to avoid orphans
+        _git("worktree", "remove", str(worktree_path), "--force")
+        _git("branch", "-D", branch_name)
+        raise
 
     _output({
         "status": "created",
@@ -156,14 +168,11 @@ def list_worktrees() -> None:
     """List all tracked worktrees and their status."""
     repo_root = _find_repo_root()
     manifest = _load_manifest(repo_root)
-
-    # Get actual git worktree paths for cross-referencing
     git_worktree_paths = _get_git_worktree_paths()
 
     worktrees = []
     for name, entry in manifest.get("worktrees", {}).items():
         abs_path = str(repo_root / entry["path"])
-        # Determine status: if manifest says active but worktree is gone, it's stale
         status = entry.get("status", "active")
         if status == "active" and abs_path not in git_worktree_paths:
             status = "stale"
@@ -172,7 +181,7 @@ def list_worktrees() -> None:
             "name": name,
             "path": entry["path"],
             "branch": entry["branch"],
-            "base_branch": entry.get("base_branch", "unknown"),
+            "base_branch": entry.get("base_branch"),
             "issue": entry.get("issue"),
             "created_at": entry.get("created_at"),
             "status": status,
@@ -187,7 +196,6 @@ def main() -> None:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # create
     create_parser = subparsers.add_parser("create", help="Create a new worktree")
     create_parser.add_argument(
         "--name", required=True, help="Worktree name (used in path and branch)"
@@ -199,7 +207,6 @@ def main() -> None:
         "--issue", type=int, default=None, help="Issue number to link"
     )
 
-    # list
     subparsers.add_parser("list", help="List all tracked worktrees")
 
     args = parser.parse_args()
@@ -211,4 +218,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as e:
+        _error(f"Unexpected error: {e}")
