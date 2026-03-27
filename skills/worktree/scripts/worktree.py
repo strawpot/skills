@@ -208,6 +208,7 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
     try:
         _save_manifest(repo_root, manifest)
     except SystemExit:
+        # Manifest save failed — rollback the worktree to avoid orphans
         _git("worktree", "remove", str(worktree_path), "--force")
         _git("branch", "-D", branch_name)
         raise
