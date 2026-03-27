@@ -171,32 +171,6 @@ python scripts/worktree.py discard --name my-feature --keep-remote
 }
 ```
 
-### `list` — List worktrees and their status
-
-Reads the manifest and cross-references with `git worktree list` to
-show all tracked worktrees and detect orphaned entries.
-
-```bash
-python scripts/worktree.py list
-```
-
-**Output:**
-```json
-{
-  "worktrees": [
-    {
-      "name": "my-feature",
-      "path": ".strawpot/worktrees/my-feature",
-      "branch": "worktree/my-feature",
-      "base_branch": "main",
-      "issue": 42,
-      "created_at": "2026-03-27T12:00:00+00:00",
-      "status": "active"
-    }
-  ]
-}
-```
-
 **Status values:**
 
 | Status | Meaning |
