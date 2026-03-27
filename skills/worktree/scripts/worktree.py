@@ -8,13 +8,15 @@ Usage:
 Output: JSON to stdout. Exit code 1 on error.
 """
 
+from __future__ import annotations
+
 import argparse
 import datetime
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 MANIFEST_REL = ".strawpot/worktrees.json"
 WORKTREES_DIR_REL = ".strawpot/worktrees"
@@ -37,10 +39,15 @@ def _find_repo_root() -> Path:
     return Path(result.stdout.strip())
 
 
-def _error(message: str) -> None:
-    """Print a JSON error and exit."""
-    json.dump({"error": message}, sys.stdout, indent=2)
+def _output(data: dict) -> None:
+    """Write a JSON object to stdout."""
+    json.dump(data, sys.stdout, indent=2)
     print()
+
+
+def _error(message: str) -> NoReturn:
+    """Print a JSON error and exit."""
+    _output({"error": message})
     sys.exit(1)
 
 
@@ -54,7 +61,6 @@ def _load_manifest(repo_root: Path) -> dict:
             return json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         _error(f"Failed to read manifest: {e}")
-        return {}  # unreachable, but keeps type checker happy
 
 
 def _save_manifest(repo_root: Path, manifest: dict) -> None:
@@ -136,18 +142,14 @@ def create(name: str, base: str | None = None, issue: int | None = None) -> None
     manifest["worktrees"][name] = entry
     _save_manifest(repo_root, manifest)
 
-    # Output result
-    result_json = {
+    _output({
         "status": "created",
         "name": name,
         "path": rel_path,
         "branch": branch_name,
         "base_branch": base,
-    }
-    if issue is not None:
-        result_json["issue"] = issue
-    json.dump(result_json, sys.stdout, indent=2)
-    print()
+        "issue": issue,
+    })
 
 
 def list_worktrees() -> None:
@@ -176,8 +178,7 @@ def list_worktrees() -> None:
             "status": status,
         })
 
-    json.dump({"worktrees": worktrees}, sys.stdout, indent=2)
-    print()
+    _output({"worktrees": worktrees})
 
 
 def main() -> None:
