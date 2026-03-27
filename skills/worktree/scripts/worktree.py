@@ -128,7 +128,7 @@ def _get_manifest_entry(manifest: dict, name: str) -> dict:
 def _detect_pr(branch: str) -> dict | None:
     """Check if a PR exists for the given branch. Returns PR info or None."""
     try:
-        result = _run("gh", "pr", "list", "--head", branch, "--json", "url,state", "--limit", "1")
+        result = _run("gh", "pr", "list", "--head", branch, "--state", "all", "--json", "url,state", "--limit", "1")
     except (FileNotFoundError, subprocess.TimeoutExpired):
         return None
     if result.returncode != 0 or not result.stdout.strip():
@@ -140,12 +140,15 @@ def _detect_pr(branch: str) -> dict | None:
         return None
 
 
-def _remove_worktree(repo_root: Path, entry: dict) -> None:
-    """Remove a git worktree, tolerating already-removed state."""
+def _remove_worktree(repo_root: Path, entry: dict) -> bool:
+    """Remove a git worktree, tolerating already-removed state. Returns True if removed."""
     worktree_path = repo_root / entry["path"]
     if worktree_path.exists():
-        _git("worktree", "remove", str(worktree_path), "--force")
+        result = _git("worktree", "remove", str(worktree_path), "--force")
+        if result.returncode != 0:
+            return False
     _git("worktree", "prune")
+    return True
 
 
 def _delete_local_branch(branch: str) -> bool:
@@ -231,11 +234,10 @@ def merge(name: str) -> None:
     pr = _detect_pr(branch)
 
     if pr and pr.get("state") == "MERGED":
-        # PR already merged — full cleanup
-        _remove_worktree(repo_root, entry)
-        _delete_local_branch(branch)
         entry["status"] = "done"
         _save_manifest(repo_root, manifest)
+        _remove_worktree(repo_root, entry)
+        _delete_local_branch(branch)
         _output({
             "status": "done",
             "name": name,
@@ -245,10 +247,9 @@ def merge(name: str) -> None:
         return
 
     if pr and pr.get("state") == "OPEN":
-        # PR is open — remove worktree but keep the branch
-        _remove_worktree(repo_root, entry)
         entry["status"] = "merged-via-pr"
         _save_manifest(repo_root, manifest)
+        _remove_worktree(repo_root, entry)
         _output({
             "status": "merged-via-pr",
             "name": name,
@@ -271,7 +272,10 @@ def merge(name: str) -> None:
             patches_dir = repo_root / PATCHES_DIR_REL
             patches_dir.mkdir(parents=True, exist_ok=True)
             patch_path = patches_dir / f"{name}.patch"
-            patch_path.write_text(patch, encoding="utf-8")
+            try:
+                patch_path.write_text(patch, encoding="utf-8")
+            except OSError as e:
+                _error(f"Merge conflict detected but failed to save patch: {e}")
 
             entry["status"] = "conflict"
             _save_manifest(repo_root, manifest)
@@ -291,10 +295,10 @@ def merge(name: str) -> None:
     else:
         message = "No changes to merge — worktree cleaned up"
 
-    _remove_worktree(repo_root, entry)
-    _delete_local_branch(branch)
     entry["status"] = "merged"
     _save_manifest(repo_root, manifest)
+    _remove_worktree(repo_root, entry)
+    _delete_local_branch(branch)
     _output({"status": "merged", "name": name, "message": message})
 
 
@@ -305,19 +309,18 @@ def discard(name: str, keep_remote: bool = False) -> None:
     entry = _get_manifest_entry(manifest, name)
     branch = entry["branch"]
 
-    _remove_worktree(repo_root, entry)
-    _delete_local_branch(branch)
-
-    if not keep_remote:
-        _delete_remote_branch(branch)
-
     entry["status"] = "discarded"
     _save_manifest(repo_root, manifest)
+
+    _remove_worktree(repo_root, entry)
+    _delete_local_branch(branch)
+    remote_deleted = _delete_remote_branch(branch) if not keep_remote else False
+
     _output({
         "status": "discarded",
         "name": name,
         "message": "Worktree and branch removed",
-        "remote_deleted": not keep_remote,
+        "remote_deleted": remote_deleted,
     })
 
 
